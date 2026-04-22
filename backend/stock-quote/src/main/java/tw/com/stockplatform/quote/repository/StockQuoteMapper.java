@@ -30,6 +30,25 @@ public interface StockQuoteMapper {
     Optional<StockQuotePO> findLatestByStockId(@Param("stockId") String stockId);
 
     /**
+     * 查詢指定股票在指定日期前（不含）的最近一筆行情（即前一交易日）。
+     * 用於計算 change/changePercent。
+     */
+    @Select("""
+        SELECT quote_id, stock_id, stock_name, market,
+               open_price, high_price, low_price, close_price,
+               volume, quote_date, created_at
+        FROM stock_quote
+        WHERE stock_id = #{stockId}
+          AND quote_date < #{beforeDate}
+        ORDER BY quote_date DESC
+        LIMIT 1
+        """)
+    Optional<StockQuotePO> findPreviousByStockId(
+        @Param("stockId") String stockId,
+        @Param("beforeDate") LocalDate beforeDate
+    );
+
+    /**
      * 批次查詢多檔最新行情（XML Mapper：StockQuoteMapper.xml#findLatestByStockIds）。
      */
     List<StockQuotePO> findLatestByStockIds(@Param("stockIds") List<String> stockIds);

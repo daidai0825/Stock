@@ -21,6 +21,7 @@ import tw.com.stockplatform.infrastructure.client.mops.MOPSEpsDTO;
 import tw.com.stockplatform.infrastructure.client.mops.MOPSFinancialSummaryDTO;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,9 +35,10 @@ import static org.mockito.Mockito.when;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * FundamentalServiceImpl 單元測試（Wave 2 Round 1 更新）。
+ * FundamentalServiceImpl 單元測試（Wave 2 Round 2 更新）。
  * <p>
- * B-BE-W2-03 修正驗證：確保最新季度取自 max(year, quarter)，而非 list.get(0)。
+ * Round 2 變更：FundamentalDTO 結構改為 schema-lock v1.0
+ * （per/pbr 去掉 Ratio 字尾 + source="MOPS" + updatedAt）。
  */
 @ExtendWith(MockitoExtension.class)
 class FundamentalServiceImplTest {
@@ -76,7 +78,7 @@ class FundamentalServiceImplTest {
     }
 
     @Test
-    @DisplayName("getFundamental：DB 有資料時回傳 DB 資料")
+    @DisplayName("getFundamental：DB 有資料時回傳 DB 資料（per/pbr 欄位名正確）")
     void getFundamental_DbHit() {
         StockFundamentalPO po = buildFundamentalPO("2330");
         FundamentalDTO dto = buildFundamentalDTO("2330");
@@ -88,6 +90,10 @@ class FundamentalServiceImplTest {
 
         assertThat(result.stockId()).isEqualTo("2330");
         assertThat(result.eps()).isEqualByComparingTo("30.00");
+        // 驗證 schema-lock 欄位名（per/pbr 不是 perRatio/pbrRatio）
+        assertThat(result.per()).isEqualByComparingTo("25.0");
+        assertThat(result.pbr()).isEqualByComparingTo("5.0");
+        assertThat(result.source()).isEqualTo("MOPS");
         verify(valueOperations).set(anyString(), eq(dto), anyLong(), eq(SECONDS));
     }
 
@@ -118,12 +124,11 @@ class FundamentalServiceImplTest {
     @Test
     @DisplayName("B-BE-W2-03 修正：EPS list 未依序排列時，reportYear/Quarter 仍應取最新季")
     void getFundamental_EpsUnsorted_CorrectLatestQuarter() {
-        // Given：epsList 故意亂序（最新一季放在中間）
-        // 2024 Q2 > 2024 Q1 > 2023 Q4
+        // 故意亂序：最新一季（2024 Q2）放在中間
         List<MOPSEpsDTO> epsList = List.of(
-            new MOPSEpsDTO("2330", 2023, 4, new BigDecimal("7.50")),  // 舊季
-            new MOPSEpsDTO("2330", 2024, 2, new BigDecimal("10.00")), // 最新
-            new MOPSEpsDTO("2330", 2024, 1, new BigDecimal("8.00"))   // 次新
+            new MOPSEpsDTO("2330", 2023, 4, new BigDecimal("7.50")),
+            new MOPSEpsDTO("2330", 2024, 2, new BigDecimal("10.00")),
+            new MOPSEpsDTO("2330", 2024, 1, new BigDecimal("8.00"))
         );
         when(valueOperations.get(anyString())).thenReturn(null);
         when(fundamentalMapper.findByStockId("2330")).thenReturn(Optional.empty());
@@ -134,7 +139,6 @@ class FundamentalServiceImplTest {
         when(fundamentalMapper.upsert(any())).thenReturn(1);
         when(fundamentalConvertor.toDTO(any())).thenReturn(buildFundamentalDTO("2330"));
 
-        // Capture the PO saved to DB
         ArgumentCaptor<StockFundamentalPO> poCaptor = ArgumentCaptor.forClass(StockFundamentalPO.class);
 
         fundamentalService.getFundamental(new FundamentalGetRequest("2330"));
@@ -150,7 +154,7 @@ class FundamentalServiceImplTest {
     @Test
     @DisplayName("B-BE-W2-04：OTC 股票（4000-8999）應呼叫 fetchEps with market=OTC")
     void getFundamental_OtcStock_UsesOtcMarket() {
-        String otcStockId = "6488"; // 環球晶，OTC
+        String otcStockId = "6488";
         FundamentalDTO dto = buildFundamentalDTO(otcStockId);
         when(valueOperations.get(anyString())).thenReturn(null);
         when(fundamentalMapper.findByStockId(otcStockId)).thenReturn(Optional.empty());
@@ -167,13 +171,36 @@ class FundamentalServiceImplTest {
         verify(mopsClient).fetchFinancialSummary(otcStockId, "OTC");
     }
 
+    @Test
+    @DisplayName("FundamentalConvertor.toDTO：perRatio→per、pbrRatio→pbr、source=MOPS（直接驗證 Convertor 邏輯）")
+    void fundamentalConvertor_ToDTO_CorrectFieldMapping() {
+        // 不 mock Convertor，直接驗證 default toDTO 邏輯
+        tw.com.stockplatform.fundamental.convertor.FundamentalConvertor convertor =
+            new tw.com.stockplatform.fundamental.convertor.FundamentalConvertor() {};
+
+        StockFundamentalPO po = buildFundamentalPO("2330");
+        FundamentalDTO dto = convertor.toDTO(po);
+
+        // 驗證欄位名映射正確
+        assertThat(dto.per()).isEqualByComparingTo("25.0");   // perRatio → per
+        assertThat(dto.pbr()).isEqualByComparingTo("5.0");    // pbrRatio → pbr
+        assertThat(dto.source()).isEqualTo("MOPS");            // 固定值
+        assertThat(dto.updatedAt()).isNotNull();
+    }
+
     // --- 輔助方法 ---
 
     private FundamentalDTO buildFundamentalDTO(String stockId) {
-        return new FundamentalDTO(stockId, "台積電",
-            new BigDecimal("30.00"), new BigDecimal("25.0"),
-            new BigDecimal("5.0"), new BigDecimal("28.0"),
-            2024, 1);
+        return new FundamentalDTO(
+            stockId, "台積電",
+            new BigDecimal("30.00"),
+            new BigDecimal("25.0"),    // per（非 perRatio）
+            new BigDecimal("5.0"),     // pbr（非 pbrRatio）
+            new BigDecimal("28.0"),
+            2024, 1,
+            LocalDateTime.now(),
+            "MOPS"
+        );
     }
 
     private StockFundamentalPO buildFundamentalPO(String stockId) {
@@ -187,6 +214,7 @@ class FundamentalServiceImplTest {
             .roe(new BigDecimal("28.0"))
             .reportYear(2024)
             .reportQuarter(1)
+            .updatedAt(LocalDateTime.now())
             .build();
     }
 }
