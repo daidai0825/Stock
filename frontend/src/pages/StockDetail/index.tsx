@@ -1,6 +1,7 @@
 import { type FC, useEffect, useState } from 'react';
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { Col, notification, Result, Row, Space } from 'antd';
+import { Col, notification, Result, Row, Space, Tag } from 'antd';
+import { WarningOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { KLinePeriod } from '@/types/stock';
 import { BusinessError } from '@/types/api';
@@ -21,7 +22,7 @@ import { logger } from '@/utils/logger';
  * 個股詳情頁（/stocks/:stockId）
  *
  * 組合所有區塊：
- * - PriceHeader：即時行情標題列
+ * - PriceHeader：即時行情標題列（含 isStale 警示 Tag）
  * - PeriodSelector + KLineChart：K 線圖
  * - FundamentalCard：基本面
  * - ChipCard：三大法人籌碼
@@ -29,6 +30,10 @@ import { logger } from '@/utils/logger';
  * 錯誤處理：React Query error → useEffect → notification.error（含 traceId）。
  * useEffect 包裹確保只在 error 物件參考改變時觸發一次，
  * 避免每次 re-render 重複 fire（B-FE-WaveB-01 修正）。
+ *
+ * Round 2 新增：
+ * - isStale=true 時在行情區域顯示「資料延遲」警示 Tag（schema-lock §1.3）
+ * - 4001 STOCK_NOT_FOUND 使用 ErrorCode.STOCK_NOT_FOUND（取代舊版 RESOURCE_NOT_FOUND）
  */
 const useQueryErrorNotification = (error: Error | null, context: string): void => {
   const { t } = useTranslation();
@@ -42,9 +47,9 @@ const useQueryErrorNotification = (error: Error | null, context: string): void =
   }, [error, context, t]);
 };
 
-/** 是否為「股票不存在」錯誤（RESOURCE_NOT_FOUND / 4001） */
+/** 是否為「股票不存在」錯誤（STOCK_NOT_FOUND / 4001） */
 const isStockNotFound = (error: Error | null): boolean =>
-  error instanceof BusinessError && error.code === ErrorCode.RESOURCE_NOT_FOUND;
+  error instanceof BusinessError && error.code === ErrorCode.STOCK_NOT_FOUND;
 
 export const StockDetailPage: FC = () => {
   const { stockId = '' } = useParams<{ stockId: string }>();
@@ -88,8 +93,25 @@ export const StockDetailPage: FC = () => {
     );
   }
 
+  // isStale=true 時顯示「資料延遲」警示 Tag（schema-lock §1.3 設計說明）
+  const isStale = quoteQuery.data?.isStale === true;
+
   return (
     <Space direction="vertical" size={16} style={{ width: '100%' }}>
+      {/* isStale 警示提示（schema-lock §1.3：isStale=true 時顯示） */}
+      {isStale && (
+        <Tag
+          icon={<WarningOutlined />}
+          color="warning"
+          data-testid="stale-data-tag"
+        >
+          {t('stock.staleData', {
+            date: quoteQuery.data?.quoteDate ?? '',
+            defaultValue: '資料延遲，最後更新：{{date}}',
+          })}
+        </Tag>
+      )}
+
       {/* 行情標題 */}
       <PriceHeader
         quote={quoteQuery.data}
@@ -99,9 +121,9 @@ export const StockDetailPage: FC = () => {
       {/* K 線週期切換 */}
       <PeriodSelector value={period} onChange={setPeriod} />
 
-      {/* K 線圖 */}
+      {/* K 線圖：消費 historyQuery.data.items 陣列 */}
       <KLineChart
-        history={historyQuery.data}
+        history={historyQuery.data?.items}
         isLoading={historyQuery.isLoading}
         isError={historyQuery.isError}
       />

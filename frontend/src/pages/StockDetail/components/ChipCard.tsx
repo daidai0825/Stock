@@ -3,12 +3,12 @@ import { Card, Skeleton, Table, Tooltip, Typography } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { useTranslation } from 'react-i18next';
-import type { Chip, ChipInstitutionEntry } from '@/types/stock';
+import type { InstitutionItem, StockChip } from '@/types/stock';
 
 const { Text } = Typography;
 
 interface ChipCardProps {
-  chip: Chip | undefined;
+  chip: StockChip | undefined;
   isLoading: boolean;
 }
 
@@ -22,6 +22,13 @@ const netColor = (val: number): string => {
   return 'inherit';
 };
 
+/**
+ * 三大法人籌碼卡片（Wave B Round 2 對齊 Schema Lock）
+ *
+ * 固定 3 筆，順序由後端保證：外資、投信、自營商（schema-lock §5.3）。
+ * 前端依此順序渲染，不依名稱動態排序。
+ * totalNetBuySell 由後端計算（schema-lock §5.3），前端直接顯示。
+ */
 export const ChipCard: FC<ChipCardProps> = ({ chip, isLoading }) => {
   const { t } = useTranslation();
 
@@ -37,7 +44,7 @@ export const ChipCard: FC<ChipCardProps> = ({ chip, isLoading }) => {
     </span>
   );
 
-  const columns: ColumnsType<ChipInstitutionEntry> = [
+  const columns: ColumnsType<InstitutionItem> = [
     {
       title: t('stock.chip.institution'),
       dataIndex: 'name',
@@ -89,14 +96,27 @@ export const ChipCard: FC<ChipCardProps> = ({ chip, isLoading }) => {
       ) : chip === undefined ? (
         <Text type="secondary">{t('common.empty')}</Text>
       ) : (
-        <Table<ChipInstitutionEntry>
-          dataSource={chip.institutions}
-          columns={columns}
-          rowKey="name"
-          pagination={false}
-          size="small"
-          aria-label={t('stock.chip.title')}
-        />
+        <>
+          <Table<InstitutionItem>
+            dataSource={chip.institutions}
+            columns={columns}
+            rowKey="name"
+            pagination={false}
+            size="small"
+            aria-label={t('stock.chip.title')}
+          />
+          {/* 三大法人合計（totalNetBuySell 由後端計算，schema-lock §5.3） */}
+          <Text
+            type="secondary"
+            style={{ fontSize: 12, display: 'block', marginTop: 8, textAlign: 'right' }}
+            data-testid="chip-total-net"
+          >
+            {t('stock.chip.totalNetBuySell')}：
+            <span style={{ color: netColor(chip.totalNetBuySell) }}>
+              {chip.totalNetBuySell >= 0 ? '+' : ''}{fmtNumber(chip.totalNetBuySell)}
+            </span>
+          </Text>
+        </>
       )}
     </Card>
   );

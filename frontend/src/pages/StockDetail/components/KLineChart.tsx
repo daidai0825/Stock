@@ -16,7 +16,7 @@ import {
 } from 'lightweight-charts';
 import { Skeleton, Typography, Alert } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { StockHistoryItem } from '@/types/stock';
+import type { KLineItem } from '@/types/stock';
 
 const { Text } = Typography;
 
@@ -24,13 +24,13 @@ const { Text } = Typography;
 const CHART_HEIGHT = 400;
 
 interface KLineChartProps {
-  history: StockHistoryItem[] | undefined;
+  history: KLineItem[] | undefined;
   isLoading: boolean;
   isError: boolean;
 }
 
-/** 將後端 StockHistoryItem 轉為 lightweight-charts CandlestickData */
-const toCandlestickData = (items: StockHistoryItem[]): CandlestickData<Time>[] =>
+/** 將後端 KLineItem 轉為 lightweight-charts CandlestickData */
+const toCandlestickData = (items: KLineItem[]): CandlestickData<Time>[] =>
   items.map((item) => ({
     time: item.date as Time,
     open: parseFloat(item.open),
@@ -39,9 +39,9 @@ const toCandlestickData = (items: StockHistoryItem[]): CandlestickData<Time>[] =
     close: parseFloat(item.close),
   }));
 
-/** 將後端 StockHistoryItem 轉為 lightweight-charts HistogramData（成交量） */
+/** 將後端 KLineItem 轉為 lightweight-charts HistogramData（成交量） */
 const toVolumeData = (
-  items: StockHistoryItem[],
+  items: KLineItem[],
   candleData: CandlestickData<Time>[],
 ): HistogramData<Time>[] =>
   items.map((item, idx) => {
