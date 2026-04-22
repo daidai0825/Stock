@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+    "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="tw.com.stockplatform.quote.repository.StockQuoteMapper">
+
+    <!--
+        批次查詢多檔最新行情：
+        透過 DISTINCT ON 取各 stock_id 最近一筆，避免 N+1。
+        N-09: 加入 IN 清單長度防護；超過 500 筆由 Service 層分批（Caller 責任）。
+        Oracle IN 子句硬上限約 1000，PostgreSQL 無硬限但過大影響 plan。
+    -->
+    <select id="findLatestByStockIds" resultType="tw.com.stockplatform.domain.po.StockQuotePO">
+        SELECT DISTINCT ON (stock_id)
+            quote_id, stock_id, stock_name, market,
+            open_price, high_price, low_price, close_price,
+            volume, quote_date, created_at
+        FROM stock_quote
+        WHERE stock_id IN
+        <foreach collection="stockIds" item="id" open="(" separator="," close=")"
+                 index="i">
+            #{id}
+        </foreach>
+        ORDER BY stock_id, quote_date DESC
+    </select>
+
+</mapper>

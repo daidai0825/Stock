@@ -1,0 +1,143 @@
+{
+  "app": {
+    "title": "Taiwan Stock Analysis Platform",
+    "subtitle": "Stock Health Score · Technical Pattern Observation · Chip Flow Observation · Condition Alerts"
+  },
+  "common": {
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "add": "Add",
+    "search": "Search",
+    "loading": "Loading...",
+    "empty": "No data available",
+    "errorRetry": "An error occurred, please try again",
+    "logout": "Log out"
+  },
+  "nav": {
+    "home": "Home",
+    "watchlist": "Watchlist",
+    "profile": "Profile"
+  },
+  "auth": {
+    "login": "Log in",
+    "register": "Sign up",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "displayName": "Display name",
+    "haveAccount": "Already have an account? Log in",
+    "noAccount": "Don't have an account? Sign up",
+    "loginSuccess": "Logged in successfully",
+    "registerSuccess": "Registered. Please verify your email.",
+    "logoutSuccess": "Logged out",
+    "validation": {
+      "emailRequired": "Email is required",
+      "emailFormat": "Invalid email format",
+      "passwordRequired": "Password is required",
+      "passwordMinLength": "Password must be at least 8 characters",
+      "passwordMismatch": "Passwords do not match",
+      "displayNameRequired": "Display name is required",
+      "displayNameMaxLength": "Display name can be up to 50 characters"
+    }
+  },
+  "profile": {
+    "title": "Profile",
+    "updateSuccess": "Profile updated",
+    "notifySection": "Notification preferences",
+    "notifyWeb": "Web Push (browser notifications)",
+    "notifyTelegram": "Telegram Bot",
+    "notifyComingSoon": "Notification features will launch in a future release"
+  },
+  "watchlist": {
+    "title": "Watchlist",
+    "addStock": "Add stock",
+    "removeConfirm": "Remove {{stockCode}}?",
+    "limitNotice": "Watchlist limit: 50 stocks",
+    "columns": {
+      "stockCode": "Code",
+      "stockName": "Name",
+      "market": "Market",
+      "lastPrice": "Price",
+      "changePercent": "Change %",
+      "healthScore": "Health Score",
+      "actions": "Actions"
+    },
+    "comingSoon": "Wave A is a skeleton; full add functionality will launch in Wave B"
+  },
+  "home": {
+    "welcome": "Welcome, {{name}}",
+    "summary": "This platform provides Taiwan stock market information references including stock health scores, technical pattern observations, chip flow observations, and condition alerts.",
+    "moduleTitles": {
+      "watchlist": "Watchlist",
+      "techObservation": "Technical Pattern Observation",
+      "chipObservation": "Chip Flow Observation",
+      "alert": "Condition Alerts"
+    }
+  },
+  "errors": {
+    "0": "Success",
+    "1001": "Missing required parameter",
+    "1002": "Invalid parameter format",
+    "1003": "Parameter out of range",
+    "2001": "User not found",
+    "2010": "Email already registered",
+    "2011": "Incorrect password",
+    "2012": "Email not yet verified",
+    "2050": "Watchlist has reached the 50-stock limit",
+    "3001": "Not logged in, please sign in first",
+    "3002": "Session timed out, please log in again",
+    "3003": "Invalid session, please log in again",
+    "3004": "No permission",
+    "4001": "Resource not found",
+    "4002": "Resource has been deleted",
+    "5101": "TWSE data source temporarily unavailable",
+    "9001": "System busy, please try again later",
+    "9003": "This feature is not yet available, stay tuned",
+    "9999": "Unknown error",
+    "network": "Network error, please check your connection"
+  },
+  "disclaimer": "This platform provides market information for reference only. All content (including stock health scores, technical pattern observations, chip flow observations, and condition alerts) does not constitute investment advice or any offer. Investing involves risk; please evaluate carefully on your own. The platform is not responsible for any investment outcome. Data sources: TWSE, TPEx, MOPS; public data is delayed by approximately 20 minutes.",
+  "footer": {
+    "copyright": "© {{year}} Taiwan Stock Analysis Platform",
+    "version": "Version {{version}}"
+  },
+  "stock": {
+    "price": "Price",
+    "change": "Change",
+    "changePercent": "Change %",
+    "volume": "Volume",
+    "updatedAt": "Updated At",
+    "period": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    },
+    "klineTitle": "K-Line Chart",
+    "klineDisclaimer": "⚠️ Chart data is for reference only and does not constitute investment advice. Investing involves risk; please evaluate carefully.",
+    "fundamental": {
+      "title": "Fundamentals",
+      "eps": "EPS (NTD)",
+      "per": "P/E Ratio",
+      "pbr": "P/B Ratio",
+      "roe": "ROE (%)",
+      "updatedAt": "Data Date",
+      "sourceTooltip": "Source: Market Observation Post System (MOPS) · Updated quarterly"
+    },
+    "chip": {
+      "title": "Institutional Investors",
+      "institution": "Institution",
+      "netBuySell": "Net Buy/Sell (Shares)",
+      "buy": "Buy (Shares)",
+      "sell": "Sell (Shares)",
+      "date": "Date",
+      "sourceTooltip": "Source: Taiwan Stock Exchange (TWSE) · Updated after market close"
+    },
+    "notFound": "Stock not found",
+    "loadingQuote": "Loading quote...",
+    "loadingChart": "Loading chart..."
+  }
+}

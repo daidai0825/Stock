@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: stock-platform
+  profiles:
+    active: local
+  jackson:
+    time-zone: Asia/Taipei
+    serialization:
+      write-dates-as-timestamps: false
+
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
+mybatis:
+  configuration:
+    map-underscore-to-camel-case: true
+    use-generated-keys: true
+    default-fetch-size: 100
+    default-statement-timeout: 30
+  type-aliases-package: tw.com.stockplatform.domain.po
+  type-handlers-package: tw.com.stockplatform.infrastructure.typehandler
+  mapper-locations: classpath*:mapper/*.xml
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    operationsSorter: method
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] [%X{traceId:-}] %-5level %logger{36} - %msg%n"
+  level:
+    root: INFO
+    tw.com.stockplatform: DEBUG
+
+stock:
+  security:
+    jwt:
+      access-token-ttl-seconds: 900

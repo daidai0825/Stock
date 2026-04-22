@@ -1,0 +1,180 @@
+# ============================================================================
+# Taiwan Stock Analysis Platform — .gitignore
+# 涵蓋：Java/Maven/Gradle、Node/Vite、IDE、OS、Secrets
+# ============================================================================
+
+# ---------------------------------------------------------------------------
+# Java / Maven / Gradle
+# ---------------------------------------------------------------------------
+target/
+build/
+out/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# Maven
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Gradle
+.gradle/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Spring Boot
+*.original
+spring-boot-*.log
+
+# ---------------------------------------------------------------------------
+# Node / npm / pnpm / Vite / React
+# ---------------------------------------------------------------------------
+node_modules/
+dist/
+dist-ssr/
+.vite/
+.turbo/
+.parcel-cache/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Vitest / Jest / Playwright
+coverage/
+.nyc_output/
+playwright-report/
+playwright/.cache/
+test-results/
+
+# MSW
+public/mockServiceWorker.js
+
+# ---------------------------------------------------------------------------
+# 環境變數與機密（嚴禁 commit）
+# ---------------------------------------------------------------------------
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.production.local
+
+# Secrets / Credentials
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+*.jks
+*.keystore
+secrets/
+credentials.json
+service-account*.json
+
+# ---------------------------------------------------------------------------
+# IDE
+# ---------------------------------------------------------------------------
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Eclipse
+.project
+.classpath
+.settings/
+.factorypath
+
+# VS Code
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ---------------------------------------------------------------------------
+# 作業系統
+# ---------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Docker / Kubernetes 機敏檔
+# ---------------------------------------------------------------------------
+docker-compose.override.yml
+.docker/
+*.local.yaml
+*.local.yml
+
+# ---------------------------------------------------------------------------
+# Terraform / Ansible
+# ---------------------------------------------------------------------------
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+*.tfvars
+!example.tfvars
+
+# Ansible
+*.retry
+ansible/inventory/private/
+
+# ---------------------------------------------------------------------------
+# 暫存檔
+# ---------------------------------------------------------------------------
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+.cache/
+
+# ---------------------------------------------------------------------------
+# 大型/二進位（請改用 Git LFS）
+# ---------------------------------------------------------------------------
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+*.iso
+*.dmg
+
+# ---------------------------------------------------------------------------
+# Claude Code 本地產出（保留 .claude/ 設定，排除 runtime）
+# ---------------------------------------------------------------------------
+.claude/local/
+.claude/sessions/
+.claude/cache/
+
+# ---------------------------------------------------------------------------
+# 報表/掃描結果（生成物，不入版控）
+# ---------------------------------------------------------------------------
+dependency-check-report.html
+sonar-project-*.json
+.scannerwork/

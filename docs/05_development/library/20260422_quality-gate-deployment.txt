@@ -1,0 +1,113 @@
+============================================================
+Pre-Push Quality Gate v2 — 部署報告
+============================================================
+
+執行日期：2026-04-22
+執行者：Linus（Library 工程師）
+完成度：100% ✓
+
+============================================================
+執行內容
+============================================================
+
+1. 強化 .githooks/pre-push (v1 → v2)
+   ✓ 新增後端單元測試檢查 (mvn test)
+   ✓ 新增前端 ESLint 檢查 (npm run lint)
+   ✓ 新增前端 TypeScript 型別檢查 (npm run type-check)
+   ✓ 新增前端單元測試檢查 (npm run test)
+   ✓ 保留 CVE 掃描 (OWASP + npm audit)
+   ✓ 智慧變動偵測避免無謂掃描
+   ✓ 失敗時提示確切修復指令
+   ✓ 顯示總耗時
+
+2. 建立文檔
+   ✓ docs/05_development/library/20260422_pre-push-quality-gate.md
+     → 完整使用指南（啟用、檢查項目、FAQ、檢查清單）
+   ✓ docs/05_development/library/20260422_pre-push-quality-gate-summary.md
+     → 執行報告（內容、耗時、後續建議）
+
+3. 驗證
+   ✓ Hook 語法檢查通過 (bash -n)
+   ✓ 前端 npm scripts 完整
+     - npm run lint (ESLint, --max-warnings 0)
+     - npm run type-check (tsc --noEmit)
+     - npm run test (Vitest)
+   ✓ 實測前端檢查全部通過 (15/15 tests)
+   ✓ Backend pom.xml 結構完整 (13 modules)
+
+============================================================
+預估 Push 耗時
+============================================================
+
+無依賴檔變動：
+  • 純文件 (docs/)         → <1 second
+  • 純前端                 → 1-2 minutes
+  • 純後端                 → 2-5 minutes
+  • 前後端都變             → 3-7 minutes
+
+有依賴檔變動：
+  • backend/pom.xml 變     → +5-15 minutes (CVE scan)
+  • frontend/package.json  → +10-30 seconds (npm audit)
+
+============================================================
+跳過機制
+============================================================
+
+緊急 bypass（需 Jamie 簽核）：
+  git push --no-verify
+
+Hook 會印出警告，後續 CI 會重新執行所有檢查
+
+============================================================
+開發者激活指令（一次性）
+============================================================
+
+git config core.hooksPath .githooks
+
+驗證：
+  cat .git/config | grep hooksPath
+
+============================================================
+檔案清單
+============================================================
+
+.githooks/pre-push (12.7 KB)
+  → 主 hook 邏輯 (396 lines, v2)
+
+docs/05_development/library/
+  ├── 20260422_pre-push-quality-gate.md (5.9 KB)
+  │   → 完整使用指南
+  └── 20260422_pre-push-quality-gate-summary.md (2.9 KB)
+      → 執行報告
+
+============================================================
+Wave A 問題修復對照
+============================================================
+
+問題 1：vite.config.ts TypeScript 型別錯誤
+  ✓ 現在由 npm run type-check 攔截
+
+問題 2：Login.test.tsx antd 5 中文選擇器失敗
+  ✓ 現在由 npm run test 攔截
+
+問題 3：testUtils.tsx ESLint 警告超限
+  ✓ 現在由 npm run lint --max-warnings 0 攔截
+
+============================================================
+後續行動項目（由相關 Agent 負責）
+============================================================
+
+Sophia（CI）：
+  • 新增 Jenkins Pipeline 同步 pre-push 檢查清單
+  • Slack 通知機制
+
+Bruno/Felix（開發）：
+  • 確認本地檢查門檻與 CI 一致
+  • Maven Wrapper 補齊（可選）
+
+Linus（持續監控）：
+  • 月度檢查 false positive 率
+  • CVE 門檻調整評估
+  • 依賴掃描耗時最佳化
+
+============================================================

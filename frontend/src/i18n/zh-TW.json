@@ -1,0 +1,143 @@
+{
+  "app": {
+    "title": "台股分析平台",
+    "subtitle": "個股健康度・技術型態觀察・籌碼動向觀察・條件達成提醒"
+  },
+  "common": {
+    "submit": "送出",
+    "cancel": "取消",
+    "confirm": "確認",
+    "save": "儲存",
+    "edit": "編輯",
+    "delete": "刪除",
+    "add": "新增",
+    "search": "搜尋",
+    "loading": "載入中…",
+    "empty": "目前沒有資料",
+    "errorRetry": "發生錯誤，請稍後再試",
+    "logout": "登出"
+  },
+  "nav": {
+    "home": "首頁",
+    "watchlist": "自選股",
+    "profile": "個人資料"
+  },
+  "auth": {
+    "login": "登入",
+    "register": "註冊",
+    "email": "電子郵件",
+    "password": "密碼",
+    "confirmPassword": "確認密碼",
+    "displayName": "顯示名稱",
+    "haveAccount": "已有帳號？立即登入",
+    "noAccount": "還沒有帳號？立即註冊",
+    "loginSuccess": "登入成功",
+    "registerSuccess": "註冊成功，請至信箱完成 Email 驗證",
+    "logoutSuccess": "已登出",
+    "validation": {
+      "emailRequired": "請輸入電子郵件",
+      "emailFormat": "電子郵件格式錯誤",
+      "passwordRequired": "請輸入密碼",
+      "passwordMinLength": "密碼至少 8 碼",
+      "passwordMismatch": "兩次密碼輸入不一致",
+      "displayNameRequired": "請輸入顯示名稱",
+      "displayNameMaxLength": "顯示名稱最多 50 字"
+    }
+  },
+  "profile": {
+    "title": "個人資料",
+    "updateSuccess": "個人資料已更新",
+    "notifySection": "推播偏好設定",
+    "notifyWeb": "Web Push（瀏覽器通知）",
+    "notifyTelegram": "Telegram Bot",
+    "notifyComingSoon": "推播功能將於後續版本上線"
+  },
+  "watchlist": {
+    "title": "自選股清單",
+    "addStock": "新增自選股",
+    "removeConfirm": "確定要移除 {{stockCode}} 嗎？",
+    "limitNotice": "自選股上限 50 檔",
+    "columns": {
+      "stockCode": "代號",
+      "stockName": "名稱",
+      "market": "市場",
+      "lastPrice": "成交價",
+      "changePercent": "漲跌幅",
+      "healthScore": "個股健康度",
+      "actions": "操作"
+    },
+    "comingSoon": "Wave A 為骨架版，新增功能將於 Wave B 完整上線"
+  },
+  "home": {
+    "welcome": "歡迎，{{name}}",
+    "summary": "本平台提供台股市場資訊參考，包含個股健康度、技術型態觀察、籌碼動向觀察與條件達成提醒。",
+    "moduleTitles": {
+      "watchlist": "自選股",
+      "techObservation": "技術型態觀察",
+      "chipObservation": "籌碼動向觀察",
+      "alert": "條件達成提醒"
+    }
+  },
+  "errors": {
+    "0": "成功",
+    "1001": "必填參數缺失",
+    "1002": "參數格式錯誤",
+    "1003": "參數值超出範圍",
+    "2001": "使用者不存在",
+    "2010": "此 Email 已被註冊",
+    "2011": "密碼錯誤",
+    "2012": "Email 尚未完成驗證",
+    "2050": "自選股已達 50 檔上限",
+    "3001": "尚未登入，請先登入",
+    "3002": "登入逾時，請重新登入",
+    "3003": "登入狀態異常，請重新登入",
+    "3004": "無操作權限",
+    "4001": "資源不存在",
+    "4002": "資源已刪除",
+    "5101": "證交所資料來源暫時無法存取",
+    "9001": "系統繁忙，請稍後再試",
+    "9003": "功能尚未開放，敬請期待",
+    "9999": "未知錯誤",
+    "network": "網路連線異常，請檢查網路狀態"
+  },
+  "disclaimer": "本平台僅供市場資訊參考，所有內容（含個股健康度、技術型態觀察、籌碼動向觀察、條件達成提醒）均不構成任何投資建議或要約。投資涉及風險，請審慎自行評估，本平台不對任何投資結果負責。資料來源：證交所、櫃買中心、公開資訊觀測站，公開資料延遲約 20 分鐘。",
+  "footer": {
+    "copyright": "© {{year}} 台股分析平台",
+    "version": "版本 {{version}}"
+  },
+  "stock": {
+    "price": "成交價",
+    "change": "漲跌",
+    "changePercent": "漲跌幅",
+    "volume": "成交量",
+    "updatedAt": "更新時間",
+    "period": {
+      "daily": "日線",
+      "weekly": "週線",
+      "monthly": "月線"
+    },
+    "klineTitle": "K 線圖",
+    "klineDisclaimer": "⚠️ 圖表資料僅供參考，不構成投資建議。投資有風險，請審慎評估。",
+    "fundamental": {
+      "title": "基本面",
+      "eps": "EPS（元）",
+      "per": "本益比（PER）",
+      "pbr": "股價淨值比（PBR）",
+      "roe": "股東權益報酬率（ROE %）",
+      "updatedAt": "資料更新日",
+      "sourceTooltip": "資料來源：公開資訊觀測站（MOPS）・每季更新"
+    },
+    "chip": {
+      "title": "三大法人",
+      "institution": "法人",
+      "netBuySell": "買賣超（股）",
+      "buy": "買進（股）",
+      "sell": "賣出（股）",
+      "date": "資料日期",
+      "sourceTooltip": "資料來源：台灣證券交易所（TWSE）・每日盤後更新"
+    },
+    "notFound": "查無此股票代號",
+    "loadingQuote": "行情載入中…",
+    "loadingChart": "K 線載入中…"
+  }
+}

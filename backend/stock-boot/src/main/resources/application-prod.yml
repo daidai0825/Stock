@@ -1,0 +1,40 @@
+spring:
+  datasource:
+    url: ${STOCK_DB_URL}
+    username: ${STOCK_DB_USERNAME}
+    password: ${STOCK_DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: ${STOCK_DB_POOL_MAX:50}
+      minimum-idle: ${STOCK_DB_POOL_MIN:10}
+      connection-timeout: 30000
+  data:
+    redis:
+      host: ${STOCK_REDIS_HOST}
+      port: ${STOCK_REDIS_PORT:6379}
+      password: ${STOCK_REDIS_PASSWORD}
+  flyway:
+    enabled: true
+    baseline-on-migrate: false
+    locations: classpath:db/migration
+
+stock:
+  security:
+    jwt:
+      secret: ${STOCK_JWT_SECRET}
+      access-token-ttl-seconds: ${STOCK_JWT_TTL:900}
+  external:
+    # M-BE-W2-03: prod 移除 fallback，強制外部注入
+    twse:
+      base-url: ${STOCK_TWSE_BASE_URL}
+    otc:
+      base-url: ${STOCK_OTC_BASE_URL}
+    mops:
+      base-url: ${STOCK_MOPS_BASE_URL}
+  cache:
+    key-prefix: ${STOCK_CACHE_KEY_PREFIX:prod:}
+
+logging:
+  level:
+    root: INFO
+    tw.com.stockplatform: INFO

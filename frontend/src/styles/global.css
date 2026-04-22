@@ -1,0 +1,36 @@
+/* 全域樣式（最小化，盡量交給 Ant Design） */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang TC', 'Noto Sans TC', 'Microsoft JhengHei',
+    'Segoe UI', Roboto, sans-serif;
+}
+
+body {
+  background-color: #f5f7fa;
+  color: rgba(0, 0, 0, 0.88);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* RWD：手機 (<= 576px) 內距收斂 */
+@media (max-width: 576px) {
+  .responsive-container {
+    padding: 12px !important;
+  }
+}
+
+.disclaimer-text {
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+  line-height: 1.6;
+  text-align: center;
+  padding: 12px 16px;
+}

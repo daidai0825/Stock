@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>tw.com.stockplatform</groupId>
+        <artifactId>stock-platform</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+    <artifactId>stock-boot</artifactId>
+    <name>stock-boot</name>
+    <description>Spring Boot Application 啟動模組（含 Flyway migrations / application.yml）</description>
+
+    <dependencies>
+        <!-- 全 10 個業務 module -->
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-member</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-watchlist</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-quote</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-technical</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-chip</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-fundamental</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-news</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-risk</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-score</artifactId></dependency>
+        <dependency><groupId>tw.com.stockplatform</groupId><artifactId>stock-notify</artifactId></dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-actuator</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- Flyway -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- OpenAPI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+        </dependency>
+
+        <!-- Test -->
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>tw.com.stockplatform.boot.StockPlatformApplication</mainClass>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

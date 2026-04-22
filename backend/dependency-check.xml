@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    OWASP Dependency Check Suppression File
+    台股股票分析平台 — 後端 CVE 掃描例外清單
+
+    維護者：Linus（Library 工程師）
+    建立日期：2026-04-22
+    版本：v1（初始）
+
+    用途說明：
+    當 Dependency Check 報出「false positive」（誤報）或經評估確認「不影響本專案」的 CVE，
+    可在此檔案登錄抑制規則，避免 CI / pre-push hook 因誤報而阻塞合併。
+
+    重要規範：
+    1. 任何抑制規則必須附帶 <notes> 說明來源、評估人、評估日期、複審期限
+    2. Critical / High CVE 原則上禁止抑制；若必須抑制，需 Jamie 簽核並於週報揭露
+    3. 抑制規則建議設定 90 天複審期，過期後 Linus 必須重新評估
+    4. cve / cpe / vulnerabilityName 三選一精準鎖定，禁止使用過寬的 packageUrl regex
+    5. suppressionFile 為 v1 範本，實際 CVE 抑制需先有 baseline scan 結果
+
+    語法參考：
+    https://jeremylong.github.io/DependencyCheck/general/suppression.html
+-->
+<suppressions xmlns="https://jeremylong.github.io/DependencyCheck/dependency-suppression.1.3.xsd">
+
+    <!--
+        範例 1：抑制特定 CVE（false positive）
+        情境：Dependency Check 將「easy-rules-mvel」誤判為 mvel2 套件本身的 CVE，
+              經查證 easy-rules 已 shade mvel 並修補對應路徑。
+        評估人：Linus
+        評估日期：2026-04-22
+        複審期限：2026-07-22
+    <suppress>
+        <notes><![CDATA[
+            False positive: easy-rules 4.1.0 has shaded mvel2 and patched CVE-XXXX-YYYY.
+            Re-evaluate by 2026-07-22 (Linus).
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/org\.jeasy/easy-rules-mvel@.*$</packageUrl>
+        <cve>CVE-XXXX-YYYY</cve>
+    </suppress>
+    -->
+
+    <!--
+        範例 2：抑制 CPE 誤匹配（套件命名相似導致）
+        情境：Dependency Check 將「pushy」（jchambers/pushy APNs 客戶端）
+              誤匹配為其他同名 npm/python 套件的 CPE。
+    <suppress>
+        <notes><![CDATA[
+            False positive: CPE mismatch — jchambers/pushy (Java APNs client)
+            is not the same product as the matched CPE. Confirmed by Linus 2026-04-22.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.eatthepath/pushy@.*$</packageUrl>
+        <cpe>cpe:/a:vendor:wrong-product</cpe>
+    </suppress>
+    -->
+
+    <!--
+        範例 3：抑制經評估「本專案不受影響」的 CVE
+        情境：CVE 影響特定功能（例如 XML 反序列化），但本專案僅使用 JSON 路徑。
+              必須在 notes 中記錄不受影響的具體理由與程式碼引用點。
+    <suppress until="2026-10-22Z">
+        <notes><![CDATA[
+            CVE-XXXX-YYYY affects XML deserialization in jackson-dataformat-xml.
+            This project only uses jackson-databind for JSON. No XML parsing used.
+            Code search verified by Linus 2026-04-22 (zero matches for XmlMapper).
+            Auto-expires 2026-10-22 — re-verify after any new module added.
+        ]]></notes>
+        <packageUrl regex="true">^pkg:maven/com\.fasterxml\.jackson\.dataformat/jackson-dataformat-xml@.*$</packageUrl>
+        <cve>CVE-XXXX-YYYY</cve>
+    </suppress>
+    -->
+
+    <!--
+        v1 baseline 完成前，本檔案保持空白規則集。
+        baseline 掃描完成後（首次 mvn dependency-check:check 通過），
+        Linus 將依結果決定是否新增抑制規則並於週報公告。
+    -->
+
+</suppressions>

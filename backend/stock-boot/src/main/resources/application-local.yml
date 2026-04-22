@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/stockdb?useUnicode=true&characterEncoding=UTF-8&stringtype=unspecified
+    username: stockuser
+    password: stockpass
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      pool-name: stock-hikari
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations: classpath:db/migration
+
+stock:
+  security:
+    jwt:
+      # local 明碼可接受；dev/prod 必須用環境變數
+      secret: local-dev-secret-please-change-this-must-be-at-least-32-chars
+      access-token-ttl-seconds: 3600
+  external:
+    twse:
+      base-url: https://www.twse.com.tw
+    otc:
+      base-url: https://www.tpex.org.tw
+    mops:
+      base-url: https://mops.twse.com.tw
