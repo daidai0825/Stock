@@ -19,6 +19,9 @@ replay_pid*
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/apache-maven-*/
+**/.mvn/wrapper/*.zip
 !**/src/main/**/target/
 !**/src/test/**/target/
 
