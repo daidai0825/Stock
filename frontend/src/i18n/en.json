@@ -55,18 +55,35 @@
   "watchlist": {
     "title": "Watchlist",
     "addStock": "Add stock",
-    "removeConfirm": "Remove {{stockCode}}?",
+    "removeStock": "Remove {{stockName}}",
+    "removeConfirm": "Remove {{stockName}} ({{stockId}})?",
+    "removeSuccess": "Removed {{stockName}} ({{stockId}})",
+    "addSuccess": "Added to watchlist",
     "limitNotice": "Watchlist limit: 50 stocks",
+    "loginRequired": "Login required",
+    "loginRequiredDesc": "Please log in to use the watchlist feature",
+    "emptyTitle": "Your watchlist is empty",
+    "emptyDesc": "Use the search feature to add your first stock",
+    "emptyAction": "Add stock",
+    "quoteUnavailable": "Quote temporarily unavailable",
+    "delisted": "Stock has been delisted",
     "columns": {
-      "stockCode": "Code",
+      "stockId": "Code",
       "stockName": "Name",
       "market": "Market",
-      "lastPrice": "Price",
+      "price": "Price",
+      "change": "Change",
       "changePercent": "Change %",
-      "healthScore": "Health Score",
+      "volume": "Volume",
       "actions": "Actions"
     },
-    "comingSoon": "Wave A is a skeleton; full add functionality will launch in Wave B"
+    "search": {
+      "modalTitle": "Search and add to watchlist",
+      "placeholder": "Enter ticker or name, e.g. TSMC, 2330",
+      "noResult": "No matching stocks found",
+      "searching": "Searching...",
+      "confirm": "Add to watchlist"
+    }
   },
   "home": {
     "welcome": "Welcome, {{name}}",
@@ -94,8 +111,10 @@
     "2020": "Stock already in watchlist",
     "2021": "Watchlist limit (50) reached",
     "2022": "Watchlist group limit (10) reached",
+    "2023": "Watchlist entry not found",
     "2030": "Duplicate alert condition",
     "2031": "Alert condition has been deleted",
+    "2032": "Alert condition limit reached",
     "2040": "Account has been closed",
     "2041": "Account close period expired",
     "3001": "Not authenticated",

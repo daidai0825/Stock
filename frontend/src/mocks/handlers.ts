@@ -20,6 +20,7 @@
  */
 
 import { http, HttpResponse } from 'msw';
+import { watchlistHandlers } from './handlers/watchlistHandlers';
 
 const BASE = '/api/v1';
 
@@ -147,6 +148,9 @@ const generateMonthlyItems = (months: number) => {
 };
 
 export const handlers = [
+  // Watchlist handlers（Wave 3 W1）
+  ...watchlistHandlers,
+
   // POST /api/v1/quote/get
   http.post(`${BASE}/quote/get`, () => {
     return HttpResponse.json(buildEnvelope(mockQuote2330));

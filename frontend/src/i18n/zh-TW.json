@@ -55,18 +55,35 @@
   "watchlist": {
     "title": "自選股清單",
     "addStock": "新增自選股",
-    "removeConfirm": "確定要移除 {{stockCode}} 嗎？",
+    "removeStock": "移除 {{stockName}}",
+    "removeConfirm": "確定要移除 {{stockName}}（{{stockId}}）嗎？",
+    "removeSuccess": "已移除 {{stockName}}（{{stockId}}）",
+    "addSuccess": "已加入自選股",
     "limitNotice": "自選股上限 50 檔",
+    "loginRequired": "請先登入",
+    "loginRequiredDesc": "登入後即可使用自選股功能",
+    "emptyTitle": "尚未加入任何自選股",
+    "emptyDesc": "立即使用搜尋功能加入第一檔自選股",
+    "emptyAction": "新增自選股",
+    "quoteUnavailable": "行情暫時無法取得",
+    "delisted": "已下市或下櫃",
     "columns": {
-      "stockCode": "代號",
+      "stockId": "代號",
       "stockName": "名稱",
       "market": "市場",
-      "lastPrice": "成交價",
+      "price": "成交價",
+      "change": "漲跌",
       "changePercent": "漲跌幅",
-      "healthScore": "個股健康度",
+      "volume": "成交量",
       "actions": "操作"
     },
-    "comingSoon": "Wave A 為骨架版，新增功能將於 Wave B 完整上線"
+    "search": {
+      "modalTitle": "搜尋並加入自選股",
+      "placeholder": "輸入股票代號或名稱，例如：台積電、2330",
+      "noResult": "找不到符合的股票",
+      "searching": "搜尋中…",
+      "confirm": "加入自選股"
+    }
   },
   "home": {
     "welcome": "歡迎，{{name}}",
@@ -94,8 +111,10 @@
     "2020": "該股票已在自選股清單",
     "2021": "自選股已達上限 50 檔",
     "2022": "自訂分組已達上限 10 個",
+    "2023": "查無此自選股記錄",
     "2030": "已存在相同提醒條件",
     "2031": "提醒條件已被刪除",
+    "2032": "提醒條件數量已達上限",
     "2040": "該帳號已被註銷",
     "2041": "註銷申請已超過 30 日，無法復原",
     "3001": "未登入，請先登入",
