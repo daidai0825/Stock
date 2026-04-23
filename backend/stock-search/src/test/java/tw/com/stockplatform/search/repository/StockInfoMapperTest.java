@@ -1,5 +1,6 @@
 package tw.com.stockplatform.search.repository;
 
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -9,9 +10,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import tw.com.stockplatform.domain.po.StockInfoPO;
 
 import java.time.LocalDateTime;
@@ -64,6 +68,19 @@ class StockInfoMapperTest {
     private StockInfoMapper stockInfoMapper;
 
     private static final LocalDateTime NOW_UTC = LocalDateTime.now(ZoneOffset.UTC);
+
+    @BeforeAll
+    static void requireDocker() {
+        // 本機無 Docker daemon 時自動 skip，避免 pre-push hook 因環境問題 fail。
+        // CI 必須有 Docker（會執行此測試）。
+        boolean dockerAvailable;
+        try {
+            dockerAvailable = DockerClientFactory.instance().isDockerAvailable();
+        } catch (Throwable t) {
+            dockerAvailable = false;
+        }
+        assumeTrue(dockerAvailable, "Docker daemon not available — skipping Testcontainers test");
+    }
 
     @BeforeEach
     void setUp() {

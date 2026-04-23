@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.testcontainers.DockerClientFactory;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -24,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -76,6 +79,21 @@ class SecurityConfigIntegrationTest {
 
     @Value("${stock.security.jwt.secret}")
     private String jwtSecret;
+
+    /**
+     * Docker daemon 不可用時跳過整個測試類別（不視為失敗）。
+     * 與 StockInfoMapperTest 一致的 guard 模式，避免 CI/local 無 Docker 環境時 pre-push hook 卡住。
+     */
+    @BeforeAll
+    static void requireDocker() {
+        boolean dockerAvailable;
+        try {
+            dockerAvailable = DockerClientFactory.instance().isDockerAvailable();
+        } catch (Throwable t) {
+            dockerAvailable = false;
+        }
+        assumeTrue(dockerAvailable, "Docker daemon not available — skipping Testcontainers test");
+    }
 
     // ==========================================================================
     // SC-SEC-01：公開 endpoint 不帶 JWT → HTTP 200
