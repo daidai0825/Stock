@@ -44,6 +44,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Spring Boot 由 parent 帶入 3.3.13 -->
+        <logback.version>1.5.32</logback.version>
         <mybatis-spring-boot.version>3.0.5</mybatis-spring-boot.version>
         <postgresql.version>42.7.5</postgresql.version>
         <flyway.version>10.20.1</flyway.version>
