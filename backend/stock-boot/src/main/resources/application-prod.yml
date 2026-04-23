@@ -5,18 +5,79 @@ spring:
     password: ${STOCK_DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
     hikari:
+      pool-name: stock-hikari-prod
       maximum-pool-size: ${STOCK_DB_POOL_MAX:50}
       minimum-idle: ${STOCK_DB_POOL_MIN:10}
       connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      # 啟動時驗證連線是否可用
+      connection-test-query: SELECT 1
+      keepalive-time: 60000
   data:
     redis:
       host: ${STOCK_REDIS_HOST}
       port: ${STOCK_REDIS_PORT:6379}
       password: ${STOCK_REDIS_PASSWORD}
+      timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 32
+          max-idle: 16
+          min-idle: 4
+          max-wait: 1000ms
   flyway:
     enabled: true
     baseline-on-migrate: false
     locations: classpath:db/migration
+
+  # prod 不洩漏 error 細節（OWASP A05: 安全設定錯誤）
+  web:
+    resources:
+      add-mappings: false
+  mvc:
+    throw-exception-if-no-handler-found: true
+
+server:
+  error:
+    include-message:        never
+    include-stacktrace:     never
+    include-binding-errors: never
+    include-exception:      false
+
+# Actuator：prod 只暴露 health（含 liveness/readiness），禁止 env、beans 等敏感端點
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      show-components: never
+      # 分別暴露 liveness / readiness 給 K8s probe 使用
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
+# prod 關閉 Swagger / OpenAPI（OWASP A05）
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+logging:
+  level:
+    root: WARN
+    tw.com.stockplatform: INFO
+    # 抑制 Hikari 連線池的 DEBUG 訊息
+    com.zaxxer.hikari: WARN
+    org.flywaydb: WARN
 
 stock:
   security:
@@ -33,8 +94,3 @@ stock:
       base-url: ${STOCK_MOPS_BASE_URL}
   cache:
     key-prefix: ${STOCK_CACHE_KEY_PREFIX:prod:}
-
-logging:
-  level:
-    root: INFO
-    tw.com.stockplatform: INFO

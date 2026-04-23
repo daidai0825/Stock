@@ -1,0 +1,58 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+bases:
+  - ../../base
+
+namespace: stock-prod
+
+commonLabels:
+  environment: prod
+
+# Image tag 由發版流程覆蓋（release/* 合併 main 後 tag）
+images:
+  - name: registry.example.com/stock-platform
+    newTag: latest
+
+patches:
+  # prod 維持 3 replicas（base 預設值，列出供明確記錄）
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+    target:
+      kind: Deployment
+      name: stock-platform
+
+  # prod 資源配置（較 base 高，因正式流量較大）
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 1000m
+            memory: 1024Mi
+          limits:
+            cpu: 4000m
+            memory: 2048Mi
+    target:
+      kind: Deployment
+      name: stock-platform
+
+  # prod ConfigMap：cache prefix 保持 prod:，Hikari pool 較大
+  - patch: |-
+      - op: replace
+        path: /data/SPRING_PROFILES_ACTIVE
+        value: prod
+      - op: replace
+        path: /data/STOCK_CACHE_KEY_PREFIX
+        value: "prod:"
+      - op: replace
+        path: /data/STOCK_DB_POOL_MAX
+        value: "50"
+      - op: replace
+        path: /data/STOCK_DB_POOL_MIN
+        value: "10"
+    target:
+      kind: ConfigMap
+      name: stock-platform-config

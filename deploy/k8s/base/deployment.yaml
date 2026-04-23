@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stock-platform
+  labels:
+    app: stock-platform
+    component: backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1        # 最多多起 1 個 Pod（安全升級）
+      maxUnavailable: 0  # 升級期間不允許任何 Pod 不可用
+  selector:
+    matchLabels:
+      app: stock-platform
+  template:
+    metadata:
+      labels:
+        app: stock-platform
+        component: backend
+    spec:
+      # 使用非 root user（安全規範：禁止容器以 root 執行）
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+      containers:
+        - name: stock-platform
+          # image tag 由各 overlay 的 kustomization.yaml 覆蓋
+          image: registry.example.com/stock-platform:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # 資源配置：base 值，各 overlay 依環境覆蓋
+          resources:
+            requests:
+              cpu: 500m
+              memory: 768Mi
+            limits:
+              cpu: 2000m
+              memory: 1536Mi
+
+          # Liveness Probe：Pod 是否仍存活，失敗則重啟
+          livenessProbe:
+            httpGet:
+              path: /actuator/health/liveness
+              port: 8080
+            initialDelaySeconds: 90   # Spring Boot 啟動通常需要 60-90s
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # Readiness Probe：Pod 是否可接收流量，失敗則從 Service 移除
+          readinessProbe:
+            httpGet:
+              path: /actuator/health/readiness
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          # 環境變數來源：ConfigMap（非敏感）+ Secret（敏感）
+          envFrom:
+            - configMapRef:
+                name: stock-platform-config
+            - secretRef:
+                name: stock-platform-secret
+
+          # 容器安全設定
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+          # 唯讀 rootfs 需要 writable tmp
+          volumeMounts:
+            - name: tmp-dir
+              mountPath: /tmp
+
+      volumes:
+        - name: tmp-dir
+          emptyDir: {}
+
+      # 確保 Pod 分散到不同 Node（提升可用性）
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: stock-platform
+
+      terminationGracePeriodSeconds: 60

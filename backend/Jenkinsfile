@@ -1,0 +1,243 @@
+// Taiwan Stock Analysis Platform - Backend CI/CD Pipeline
+// 適用分支：feature/*、bugfix/*、develop、release/*、hotfix/*
+pipeline {
+    agent {
+        docker {
+            image 'maven:3.9-eclipse-temurin-21'
+            // 掛載 Maven local repository 加速後續建置
+            args '-v $HOME/.m2:/root/.m2'
+        }
+    }
+
+    environment {
+        SONAR_TOKEN       = credentials('sonar-token')
+        DOCKER_REGISTRY   = credentials('docker-registry-url')
+        DOCKER_CREDS      = credentials('docker-credentials')
+        APP_NAME          = 'stock-platform'
+        IMAGE_TAG         = "${env.BUILD_NUMBER}"
+        // dev 環境 Kubernetes namespace
+        K8S_NAMESPACE_DEV = 'stock-dev'
+    }
+
+    options {
+        timeout(time: 45, unit: 'MINUTES')
+        timestamps()
+        ansiColor('xterm')
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        // 同一分支禁止並發建置
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        // ── Stage 1: Checkout ─────────────────────────────────────────────────
+        stage('Checkout') {
+            steps {
+                checkout scm
+                script {
+                    env.GIT_COMMIT_SHORT = sh(
+                        script: "git rev-parse --short HEAD",
+                        returnStdout: true
+                    ).trim()
+                }
+                echo "Branch: ${env.BRANCH_NAME} | Commit: ${env.GIT_COMMIT_SHORT}"
+            }
+        }
+
+        // ── Stage 2: Build ────────────────────────────────────────────────────
+        stage('Build') {
+            steps {
+                dir('backend') {
+                    sh 'mvn clean compile -DskipTests -q'
+                }
+            }
+        }
+
+        // ── Stage 3: Lint（Checkstyle / Spotless） ────────────────────────────
+        // 目前 parent pom 尚未配置 Spotless / Checkstyle plugin（待 TD 補齊）。
+        // Pipeline 先以 SonarQube static analysis 取代基礎 lint；
+        // TD 補齊後請改為：sh 'mvn spotless:check -q'  或  sh 'mvn checkstyle:check -q'
+        stage('Lint') {
+            steps {
+                echo 'Lint stage placeholder — Spotless/Checkstyle plugin pending (see TD list).'
+            }
+        }
+
+        // ── Stage 4: Unit Test ────────────────────────────────────────────────
+        stage('Unit Test') {
+            steps {
+                dir('backend') {
+                    sh 'mvn test -q'
+                }
+            }
+            post {
+                always {
+                    junit '**/target/surefire-reports/*.xml'
+                    jacoco(
+                        execPattern:    '**/target/jacoco.exec',
+                        classPattern:   '**/target/classes',
+                        sourcePattern:  '**/src/main/java',
+                        minimumLineCoverage: '80'
+                    )
+                }
+            }
+        }
+
+        // ── Stage 5: SonarQube Analysis ───────────────────────────────────────
+        stage('SonarQube') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('sonar-server') {
+                        sh """
+                            mvn sonar:sonar \
+                                -Dsonar.projectKey=${APP_NAME} \
+                                -Dsonar.projectName='Taiwan Stock Platform Backend' \
+                                -Dsonar.coverage.jacoco.xmlReportPaths=**/target/site/jacoco/jacoco.xml
+                        """
+                    }
+                }
+            }
+        }
+
+        // ── Stage 6: Quality Gate ─────────────────────────────────────────────
+        stage('Quality Gate') {
+            steps {
+                timeout(time: 5, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
+            }
+        }
+
+        // ── Stage 7: Dependency Check（OWASP） ────────────────────────────────
+        stage('Dependency Check') {
+            steps {
+                dir('backend') {
+                    sh 'mvn org.owasp:dependency-check-maven:check -DfailBuildOnCVSS=7'
+                }
+            }
+            post {
+                always {
+                    publishHTML([
+                        allowMissing:          false,
+                        alwaysLinkToLastBuild: true,
+                        keepAll:               true,
+                        reportDir:             'backend/target',
+                        reportFiles:           'dependency-check-report.html',
+                        reportName:            'OWASP Dependency Check'
+                    ])
+                }
+            }
+        }
+
+        // ── Stage 8: Integration Test（Testcontainers） ───────────────────────
+        stage('Integration Test') {
+            steps {
+                dir('backend') {
+                    // failsafe plugin 執行 @SpringBootTest / Testcontainers 測試
+                    sh 'mvn verify -DskipUnitTests -q'
+                }
+            }
+            post {
+                always {
+                    junit '**/target/failsafe-reports/*.xml'
+                }
+            }
+        }
+
+        // ── Stage 9: Package + Push Image ─────────────────────────────────────
+        stage('Package') {
+            steps {
+                dir('backend') {
+                    sh 'mvn package -DskipTests -pl stock-boot -am -q'
+                }
+                script {
+                    def fullTag = "${DOCKER_REGISTRY}/${APP_NAME}:${IMAGE_TAG}"
+                    def latestTag = "${DOCKER_REGISTRY}/${APP_NAME}:latest"
+
+                    docker.withRegistry("https://${DOCKER_REGISTRY}", 'docker-credentials') {
+                        def image = docker.build(fullTag, '-f backend/stock-boot/Dockerfile backend/')
+                        image.push()
+                        image.push('latest')
+                    }
+                    // 供後續 stage 引用
+                    env.FULL_IMAGE_TAG = fullTag
+                }
+            }
+        }
+
+        // ── Stage 10: Deploy to Dev（only develop branch） ────────────────────
+        stage('Deploy to Dev') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                withCredentials([file(credentialsId: 'kubeconfig-dev', variable: 'KUBECONFIG')]) {
+                    sh """
+                        kubectl set image deployment/${APP_NAME} \
+                            ${APP_NAME}=${env.FULL_IMAGE_TAG} \
+                            --namespace=${K8S_NAMESPACE_DEV} \
+                            --kubeconfig=${KUBECONFIG}
+                        kubectl rollout status deployment/${APP_NAME} \
+                            --namespace=${K8S_NAMESPACE_DEV} \
+                            --timeout=3m \
+                            --kubeconfig=${KUBECONFIG}
+                    """
+                }
+            }
+        }
+
+        // ── Stage 11: Smoke Test ──────────────────────────────────────────────
+        stage('Smoke Test') {
+            when {
+                branch 'develop'
+            }
+            steps {
+                withCredentials([string(credentialsId: 'dev-api-base-url', variable: 'DEV_BASE_URL')]) {
+                    // 等待 Pod 完全就緒後再打 health check
+                    sh """
+                        sleep 15
+                        curl -f --retry 3 --retry-delay 10 \
+                            ${DEV_BASE_URL}/actuator/health || exit 1
+                    """
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                def msg = "Backend build #${env.BUILD_NUMBER} (${env.GIT_COMMIT_SHORT}) 成功"
+                if (env.BRANCH_NAME == 'develop') {
+                    msg += " | 已部署至 dev 環境"
+                }
+                slackSend(
+                    channel: '#deployments',
+                    color:   'good',
+                    message: "[stock-platform] ${msg}"
+                )
+            }
+        }
+        failure {
+            slackSend(
+                channel: '#deployments-alert',
+                color:   'danger',
+                message: "[stock-platform] Backend build #${env.BUILD_NUMBER} (${env.BRANCH_NAME}) 失敗，請立即處理"
+            )
+            emailext(
+                subject: "[FAILED] stock-platform backend #${env.BUILD_NUMBER}",
+                body:    "Jenkins Job: ${env.BUILD_URL}",
+                to:      '${DEFAULT_RECIPIENTS}'
+            )
+        }
+        unstable {
+            slackSend(
+                channel: '#deployments',
+                color:   'warning',
+                message: "[stock-platform] Backend build #${env.BUILD_NUMBER} 不穩定（測試警告）"
+            )
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
