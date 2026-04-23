@@ -3,7 +3,7 @@
  *
  * 涵蓋 Wave 2（M-QUOTE / M-FUND / M-CHIP + StockDetail 前端頁面）
  *
- * 跨瀏覽器：Chromium（桌面）、WebKit（桌面 + 行動模擬）
+ * 跨瀏覽器：Chromium（桌面）、Firefox（桌面）、WebKit（桌面 + 行動模擬）
  * 測試環境：前端 dev server（Vite，port 5173）搭配 MSW mock
  *
  * 啟動方式：
@@ -44,6 +44,12 @@ export default defineConfig({
         viewport: { width: 1440, height: 900 },
         channel: 'chromium',
       },
+    },
+
+    // ─── Firefox（桌面）─────────────────────────────────────────────────────
+    {
+      name: 'Firefox',
+      use: { ...devices['Desktop Firefox'] },
     },
 
     // ─── WebKit（桌面）──────────────────────────────────────────────────────
