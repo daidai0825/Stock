@@ -399,12 +399,12 @@ class ArchitectureTest {
 
 ## 9. 資料庫設計遵循
 
-對照 [oracle-database](../rules/oracle-database.md)：
+對照 [relational-database](../rules/relational-database.md)：
 
-- ✅ 表命名避開保留字（USER_INFO 而非 USER）
-- ✅ ID 使用 VARCHAR2(36) UUID
-- ✅ 時間使用 TIMESTAMP（不帶時區）
-- ✅ 金額使用 NUMBER(18,2)
+- ✅ 表命名避開保留字（user_info 而非 user）
+- ✅ ID 使用 VARCHAR(36) UUID 字串
+- ✅ 時間使用 TIMESTAMP（不帶時區，DB 存 UTC）
+- ✅ 金額使用 NUMERIC(18,2)
 - ✅ 業務邏輯不放 DB
 
 ---

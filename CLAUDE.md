@@ -209,7 +209,7 @@ Jamie 在**每個階段完成時**主動產出進度報告：
 - [environment.md](.claude/rules/environment.md) — 環境配置
 - [java-spring.md](.claude/rules/java-spring.md) — Java/Spring 開發規範
 - [react-typescript.md](.claude/rules/react-typescript.md) — React/TypeScript 開發規範
-- [oracle-database.md](.claude/rules/oracle-database.md) — Oracle 資料庫規範
+- [relational-database.md](.claude/rules/relational-database.md) — 關聯式資料庫規範（PostgreSQL 16）
 - [api-design.md](.claude/rules/api-design.md) — API 設計規範
 - [code-style.md](.claude/rules/code-style.md) — 程式碼風格
 - [git-workflow.md](.claude/rules/git-workflow.md) — Git 工作流程
