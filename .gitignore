@@ -179,6 +179,7 @@ ansible/inventory/private/
 .claude/local/
 .claude/sessions/
 .claude/cache/
+.claude/scheduled_tasks.lock
 
 # ---------------------------------------------------------------------------
 # 報表/掃描結果（生成物，不入版控）
