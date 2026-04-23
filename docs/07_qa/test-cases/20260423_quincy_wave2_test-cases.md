@@ -39,16 +39,22 @@
 
 ## 測試範圍總覽
 
-| 模組 | 測試類型 | 案例數 |
-|------|----------|--------|
-| M-QUOTE getQuote | 功能（手動 + API） | 9 |
-| M-QUOTE getHistory | 功能（手動 + API） | 8 |
-| M-FUND getFundamental | 功能（手動 + API） | 5 |
-| M-CHIP getChip | 功能（手動 + API） | 6 |
-| 前端整合 StockDetail | 功能（手動） | 5 |
-| 錯誤情境 5010-5014 | 功能（API） | 5 |
-| Schema Contract | API 合約驗證 | 4 |
-| **合計** | | **42** |
+| 模組 | 測試類型 | 案例數 | 備註 |
+|------|----------|--------|------|
+| M-QUOTE getQuote | 功能（手動 + API） | 9 | |
+| M-QUOTE getHistory | 功能（手動 + API） | 8 | |
+| M-FUND getFundamental | 功能（手動 + API） | 5 | |
+| M-CHIP getChip | 功能（手動 + API） | 6 | |
+| 前端整合 StockDetail | 功能（手動 / Quinn E2E 主責） | 5 | TC-FE-001~005 手動版退場，E2E 由 Quinn 主責 |
+| 漲跌顏色視覺驗證 | 視覺測試（Quinn E2E 主責 Reference）| 3 | M-02 新增，TC-FE-006-01~03 |
+| 跨瀏覽器 / RWD | 相容性測試（Quinn E2E 主責 Reference）| 3 | M-02 新增，TC-FE-007-01~03 |
+| 錯誤情境 5010-5014 | 功能（API） | 5 | |
+| Schema Contract | API 合約驗證 | 4 | |
+| **合計** | | **48** | 含 M-02 新增 6 個 Reference 案例 |
+
+> **修訂說明（v1.1，2026-04-23）**：依 Quinn cross-review 報告 M-01/M-02 修復
+> - M-01：TC-FE-001~005 補充整合退場說明，明確標記 Quinn E2E 主責
+> - M-02：新增 TC-FE-006（漲跌顏色，3 個 sub-case）與 TC-FE-007（RWD/i18n，3 個 sub-case），均引用 Quinn TC-Q-012、TC-Q-002-04/05、TC-Q-011-01/02 為 E2E 主責
 
 ---
 
@@ -398,10 +404,17 @@
 
 ## 五、前端整合：StockDetail 頁面
 
+> **整合說明（Quinn cross-review M-01/M-02 修復，2026-04-23）**
+>
+> TC-FE-001~005 原為手動功能測試。依 Quinn 的 cross-review 報告（§4.2 整合去重建議），以下案例已由 Quinn 的 Playwright E2E 完整自動化覆蓋，**手動版本標記退場，以 Quinn E2E 主責驗收為準**。各案例保留為 Reference 說明（方便人工 smoke test 使用），不再作為 Wave 2 放行判斷基準。
+
 ### TC-FE-001：頁面正常載入並顯示四個區塊
 
-- **類型**：前端功能測試（手動）
+> **整合退場說明**：Quinn E2E 主責（TC-Q-001-01 覆蓋 DOM 可見性）；本手動案例作為備援 smoke test。雙重保留，各司其職。
+
+- **類型**：前端功能測試（手動 / smoke）
 - **優先級**：P0
+- **E2E 主責**：Quinn TC-Q-001-01（Playwright）
 - **Given**：後端（或 MSW mock）所有 API 回傳成功
 - **When**：瀏覽器開啟 `/stocks/2330`
 - **Then**：
@@ -413,8 +426,11 @@
 
 ### TC-FE-002：isStale=true 時顯示警示 Tag
 
-- **類型**：前端功能測試（手動）
+> **整合退場說明**：Quinn E2E 主責（TC-Q-003 系列更完整，含 Tag 位置 Y 座標驗證、false 排除驗證）；本手動案例退場，不列入 Wave 2 放行判斷。
+
+- **類型**：前端功能測試（手動 / 退場 - Quinn E2E 主責）
 - **優先級**：P0
+- **E2E 主責**：Quinn TC-Q-003-01~03（Playwright）
 - **Given**：`useStockQuote` 回傳 `data.isStale = true`（使用 MSW staleQuote handler）
 - **When**：頁面載入完成
 - **Then**：
@@ -424,8 +440,12 @@
 
 ### TC-FE-003：4001 股票不存在時顯示空狀態
 
-- **類型**：前端錯誤狀態測試（手動）
+> **整合退場說明**：Quinn E2E 主責（TC-Q-008-02 覆蓋 stock-not-found-result DOM）；Quincy 的 Postman TC-QUOTE-003 驗證後端 code=4001（保留，層次不同）。
+
+- **類型**：前端錯誤狀態測試（手動 / 退場 - Quinn E2E 主責 UI）
 - **優先級**：P0
+- **E2E 主責**：Quinn TC-Q-008-02（Playwright）
+- **API 主責**：Quincy TC-QUOTE-003（Postman，仍保留）
 - **Given**：quote/get 回 `code=4001`
 - **When**：開啟 `/stocks/INVALID_CODE`
 - **Then**：
@@ -435,8 +455,11 @@
 
 ### TC-FE-004：5010/5011/5012 時顯示 notification.error
 
-- **類型**：前端錯誤通知測試（手動）
+> **整合退場說明**：Quinn E2E 主責（TC-Q-004-01~06 更精確，含 Ant Design notification 文字、traceId 比對）；本手動案例退場。
+
+- **類型**：前端錯誤通知測試（手動 / 退場 - Quinn E2E 主責）
 - **優先級**：P1
+- **E2E 主責**：Quinn TC-Q-004-01~06（Playwright）
 - **Given**：任一 API 回傳 5010/5011/5012（使用 MSW errorHandlers）
 - **When**：頁面載入
 - **Then**：
@@ -447,12 +470,87 @@
 
 ### TC-FE-005：KLine 切換週期
 
-- **類型**：前端互動測試（手動）
+> **整合退場說明**：Quinn E2E 主責（TC-Q-002-01~03 更完整，含三向切換、逆向月→日、active class 驗證）；本手動案例縮編退場。
+
+- **類型**：前端互動測試（手動 / 退場 - Quinn E2E 主責）
 - **優先級**：P1
+- **E2E 主責**：Quinn TC-Q-002-01~03（Playwright，含正向 + 逆向 + active 樣式驗證）
 - **When**：在 PeriodSelector 點擊「週」按鈕
 - **Then**：
   - 再次呼叫 `/api/v1/quote/history` 帶 `{ "period": "weekly" }`
   - KLineChart 更新為週線資料
+
+---
+
+### TC-FE-006：漲跌顏色視覺驗證（M-02 補充）
+
+> **由 Quinn E2E 主責（TC-Q-012-01~03）；本案例為驗收 reference，對齊 schema-lock §1.3 台灣股市慣例**
+
+- **類型**：視覺 / UI 樣式測試（manual reference + E2E 主責 Quinn）
+- **優先級**：P0（台灣股市核心慣例，視覺錯誤直接影響使用者判斷）
+- **對應 AC**：schema-lock §1.3 PriceHeader 呈現規格
+- **E2E 主責**：Quinn TC-Q-012-01、TC-Q-012-02、TC-Q-012-03（Playwright inline style 驗證）
+
+#### TC-FE-006-01：漲（紅色 #cf1322）
+
+- **Given**：`data.change > 0`（price > previousClose）
+- **When**：頁面載入 `/stocks/2330`，API 回傳正漲資料
+- **Then**（E2E 驗收由 Quinn TC-Q-012-01 執行）：
+  - PriceHeader 的漲跌數值 element 的 `color` inline style 為 `#cf1322`（台灣慣例：漲為紅）
+  - 漲跌文字以 `+` 開頭，與 API 回傳的 `change` 欄位符號一致
+
+#### TC-FE-006-02：跌（綠色 #3f8600）
+
+- **Given**：`data.change < 0`（price < previousClose）
+- **When**：頁面載入，API 回傳下跌資料
+- **Then**（E2E 驗收由 Quinn TC-Q-012-02 執行）：
+  - PriceHeader 漲跌 element 的 `color` inline style 為 `#3f8600`（台灣慣例：跌為綠）
+  - 漲跌文字以 `-` 開頭
+
+#### TC-FE-006-03：平盤（無顏色標記）
+
+- **Given**：`data.change = "0"` 或 `"+0.00"`（price = previousClose）
+- **When**：頁面載入，API 回傳平盤資料
+- **Then**（E2E 驗收由 Quinn TC-Q-012-03 執行）：
+  - PriceHeader 漲跌 element 不帶紅或綠的 color style（或為系統預設色）
+  - 漲跌文字顯示 `+0.00` 或 `0.00`，無誤導性顏色
+
+---
+
+### TC-FE-007：跨瀏覽器 / 響應式（RWD）驗收 Reference（M-02 補充）
+
+> **由 Quinn E2E 主責（TC-Q-002-04、TC-Q-002-05、TC-Q-011-01~02）；本案例為跨瀏覽器與 RWD 驗收的 reference，列入 Wave 2 整合測試範疇**
+
+- **類型**：相容性 / 響應式測試（manual reference + E2E 主責 Quinn）
+- **優先級**：P1（行動用戶佔比高，RWD 為基本要求）
+- **對應 AC**：schema-lock 未明確規定，但為 Web 標準品質要求
+- **E2E 主責**：Quinn TC-Q-011-01、TC-Q-011-02（iPhone 14 viewport）
+
+#### TC-FE-007-01：行動裝置（iPhone 14 Viewport 390x844）頁面可見性
+
+- **E2E 主責**：Quinn TC-Q-011-01（Playwright 行動裝置 viewport 可見性）
+- **Given**：使用 iPhone 14 viewport（390x844）開啟 `/stocks/2330`
+- **When**：頁面載入完成
+- **Then**：
+  - PriceHeader、FundamentalCard、ChipCard 在 390px 寬度下不水平溢出
+  - PeriodSelector 三個按鈕仍可見且可點擊
+  - 無橫向 scrollbar（overflow-x 不出現）
+
+#### TC-FE-007-02：行動裝置 PeriodSelector 可點擊性
+
+- **E2E 主責**：Quinn TC-Q-011-02（Playwright 行動裝置點擊驗證）
+- **Given**：使用行動裝置 viewport
+- **When**：點擊「週」按鈕
+- **Then**：按鈕響應點擊，觸發 history API 重新查詢（週線資料載入）
+
+#### TC-FE-007-03：i18n 週期文字（zh-TW / en 語系）
+
+- **E2E 主責**：Quinn TC-Q-002-04、TC-Q-002-05（Playwright i18n 文字驗證）
+- **Given**：系統語系設定為 zh-TW
+- **When**：PeriodSelector 顯示
+- **Then**：三個按鈕文字為「日」/「週」/「月」
+- **Given**：系統語系設定為 en
+- **Then**：三個按鈕文字為「D」/「W」/「M」或對應英文縮寫
 
 ---
 
@@ -501,19 +599,26 @@
 
 ## 附錄：與 Quinn 重疊範圍（整合用）
 
-以下案例屬 E2E 或 UI 互動層面，預期 Quinn 的 Playwright 測試也會涵蓋，整合時去重：
+以下案例屬 E2E 或 UI 互動層面，Quinn 的 Playwright 測試已自動化覆蓋。**整合後以 Quinn E2E 主責驗收，Quincy 手動版退場**（Quinn cross-review M-01 修復，2026-04-23）：
 
-| 本文案例 | 重疊說明 |
-|----------|----------|
-| TC-FE-001 | Quinn 的 Playwright E2E 必然涵蓋頁面正常載入 |
-| TC-FE-002 | isStale Tag 顯示為 UI 層行為，Quinn Playwright 應有 E2E 驗證 |
-| TC-FE-003 | 4001 404 頁面，Quinn Playwright E2E 涵蓋 |
-| TC-FE-004 | notification.error 顯示，Quinn Playwright 應驗證 toast |
-| TC-FE-005 | KLine 週期切換互動，Quinn Playwright E2E 應有端到端驗證 |
-| TC-HISTORY-001~003 | K 線歷史資料的 daily/weekly/monthly，如果 Quinn 有後端驗證也重疊 |
+| 本文案例 | Quinn E2E 主責 TC | 整合處置 |
+|----------|------------------|---------|
+| TC-FE-001 | TC-Q-001-01 | 雙重保留（E2E 主責 + 手動備援） |
+| TC-FE-002 | TC-Q-003-01~03 | Quinn 主責，手動版退場 |
+| TC-FE-003 | TC-Q-008-02（UI）；Quincy TC-QUOTE-003（API 保留）| UI 層 Quinn 主責；API 層 Quincy 保留 |
+| TC-FE-004 | TC-Q-004-01~06 | Quinn 主責，手動版退場 |
+| TC-FE-005 | TC-Q-002-01~03 | Quinn 主責（含三向逆向），手動版退場 |
+| TC-FE-006-01~03 | TC-Q-012-01~03（漲跌顏色）| Quinn 主責；本文為驗收 Reference（M-02 新增）|
+| TC-FE-007-01~02 | TC-Q-011-01~02（RWD iPhone 14）| Quinn 主責；本文為驗收 Reference（M-02 新增）|
+| TC-FE-007-03 | TC-Q-002-04~05（i18n 週期文字）| Quinn 主責；本文為驗收 Reference（M-02 新增）|
+| TC-HISTORY-001~003 | K 線歷史 daily/weekly/monthly | 層次不同，均保留（Quincy API 主責）|
 
-**不重疊（Quincy 獨有）**：
-- TC-QUOTE-008 / TC-QUOTE-009：BigDecimal 序列化格式，屬 API 層 Postman 測試
-- TC-CONTRACT-001~004：Schema contract 欄位完整性，Postman assertion 專屬
-- TC-FUND-003：B-BE-W2-03 EPS 排序修正驗收，後端業務邏輯測試
-- TC-CHIP-003：totalNetBuySell 計算驗證，API 層測試
+**不重疊（Quincy 獨有，不去重）**：
+
+| 案例 | 說明 |
+|------|------|
+| TC-QUOTE-008 / TC-QUOTE-009 | BigDecimal 序列化格式，API 層 Postman 測試（schema-lock 核心驗收）|
+| TC-CONTRACT-001~004 | Schema contract 欄位完整性，Postman assertion 專屬 |
+| TC-FUND-003 | EPS 排序修正驗收（B-BE-W2-03），後端業務邏輯測試 |
+| TC-CHIP-003 | totalNetBuySell 計算等式驗證，API 層測試 |
+| EP-00（Postman） | OWASP A01 未授權存取（M-03 新增），無對應 Quinn E2E |

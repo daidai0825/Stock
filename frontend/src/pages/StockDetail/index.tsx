@@ -5,7 +5,7 @@ import { WarningOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { KLinePeriod } from '@/types/stock';
 import { BusinessError } from '@/types/api';
-import { ErrorCode } from '@/constants/errorCodes';
+import { ErrorCode, isFatalDataSourceError } from '@/constants/errorCodes';
 import { RoutePath } from '@/constants/routes';
 import { useStockQuote } from './hooks/useStockQuote';
 import { useStockHistory } from './hooks/useStockHistory';
@@ -39,10 +39,28 @@ const useQueryErrorNotification = (error: Error | null, context: string): void =
   const { t } = useTranslation();
   useEffect(() => {
     if (error === null) return;
+
     const traceId = error instanceof BusinessError ? error.traceId : undefined;
-    const message = `${context}：${error.message}`;
-    const description = traceId !== undefined ? `traceId：${traceId}` : t('common.errorRetry');
-    logger.warn(`[StockDetail] ${message}`, { traceId });
+    const code = error instanceof BusinessError ? error.code : undefined;
+
+    // message：優先使用 i18n 翻譯鍵（errors.{code}），缺鍵時 fallback 到 errors.unknown
+    // 修復 TC-Q-004 / TC-Q-005：之前直接使用後端英文 error.message，現改走 i18n
+    const i18nMessage =
+      code !== undefined
+        ? t(`errors.${String(code)}`, { defaultValue: t('errors.9999') })
+        : error.message;
+    const message = `${context}：${i18nMessage}`;
+
+    // description：5014 為結構性錯誤，不應暗示可重試
+    // 修復 SPEC-Q-002：isFatalDataSourceError 分支使用 errors.dataSourceFatal
+    const description =
+      code !== undefined && isFatalDataSourceError(code)
+        ? t('errors.dataSourceFatal', { traceId: traceId ?? 'N/A' })
+        : traceId !== undefined
+          ? `traceId：${traceId}`
+          : t('common.errorRetry');
+
+    logger.warn(`[StockDetail] ${message}`, { traceId, code });
     notification.error({ message, description, duration: 5 });
   }, [error, context, t]);
 };

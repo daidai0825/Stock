@@ -106,7 +106,19 @@ export const requiresRedirectToLogin = (code: number): boolean =>
 /**
  * 屬於「第三方資料來源不可用」的錯誤碼（5010-5014）。
  * 前端建議行為：顯示「資料來源暫時無法使用」提示，可顯示 isStale fallback 資料。
- * 注意：5014 (MOPS_FORMAT_CHANGED) 解析失敗，不應提供重試按鈕。
  */
 export const isDataSourceError = (code: number): boolean =>
   code >= 5010 && code <= 5014;
+
+/**
+ * 屬於「結構性資料來源錯誤」的錯誤碼——需後端工程師介入，無法透過重試解決。
+ *
+ * 目前涵蓋：
+ * - 5014 (MOPS_FORMAT_CHANGED)：MOPS HTML 格式異動導致解析器失效。
+ *   此類錯誤需更新 parser 才能修復，對使用者顯示「工程師處理中」而非「請稍後再試」。
+ *
+ * UI 行為：notification.error + description 使用 `errors.dataSourceFatal` 翻譯鍵，
+ * 不暗示可重試。
+ */
+export const isFatalDataSourceError = (code: number): boolean =>
+  code === ErrorCode.MOPS_FORMAT_CHANGED;

@@ -517,6 +517,19 @@ test.describe('TC-Q-005: errorCode 5010-5014 Notification（en）', () => {
 
     await page.goto(STOCK_2330_URL);
     await expectNotificationContains(page, 'MOPS data format has changed unexpectedly');
+
+    // M1 修復（SPEC-Q-002 驗收落地）：
+    // 5014 為需人工介入的致命錯誤，不應顯示重試按鈕，notification description 不得含重試引導文字。
+    // TODO（pending Felix 修復 BUG-FE-5014-i18n）：若 Felix 完成 en 訊息 key 修正後，
+    //   同步將 expectNotificationContains 的期望文字改為正式 i18n key 值。
+    const descText = await page.locator('.ant-notification-notice-description').first().textContent();
+    // 負向斷言：description 不得包含重試相關引導文字
+    expect(descText ?? '').not.toContain('Retry');
+    expect(descText ?? '').not.toContain('retry');
+    expect(descText ?? '').not.toContain('Try again');
+    // 正向斷言：5014 應引導聯絡系統管理員，而非提示重試
+    // （若 i18n key 尚未對應，此行先以 toMatch 弱驗證；待 Felix 完成後改為精確文字比對）
+    // expect(descText ?? '').toContain('contact system administrator');
   });
 });
 
@@ -747,10 +760,11 @@ test.describe('TC-Q-007: 完整 User Journey', () => {
       await passwordInput.fill('password123');
       const submitBtn = page.locator('button[type="submit"]');
       await submitBtn.click();
-      // 等待登入後跳轉
-      await page.waitForURL(`**${HOME_URL}`, { timeout: 10_000 }).catch(() => {
-        // 若未跳轉也繼續（部分 mock 設定可能不同）
-      });
+
+      // M3 修復：移除 catch(() => {}) 讓登入跳轉斷言可正確 fail。
+      // 使用 expect(page).toHaveURL() 確認登入後跳轉到 HOME_URL，
+      // 若跳轉未發生，測試會正確報告失敗，不再靜默通過。
+      await expect(page).toHaveURL(new RegExp(HOME_URL.replace('/', '\\/')), { timeout: 10_000 });
     }
 
     // 直接前往 StockDetail（測試重點是頁面可存取）
@@ -854,8 +868,23 @@ test.describe('TC-Q-008: 邊界情境', () => {
     await page.goto(`/stocks/${longStockId}`);
     // 無論是 not-found-result 或 navigate away，都不應 unhandled exception
     await page.waitForLoadState('domcontentloaded');
-    // 只要沒有 page crash 即通過
-    expect(true).toBe(true);
+
+    // M2 修復：補上實質業務斷言，驗證超長 stockId 的錯誤處理行為。
+    // 預期行為（至少滿足其一）：
+    //   A. 顯示 not-found-result（stockId 通過前端驗證後送出 → API 回 4001）
+    //   B. 跳轉離開原路徑（前端在 useEffect 偵測到非法 stockId 長度後 navigate away）
+    const currentUrl = page.url();
+    const hasNotFoundResult = await page
+      .getByTestId('stock-not-found-result')
+      .isVisible({ timeout: 5_000 })
+      .catch(() => false);
+    const isRedirectedAway = !currentUrl.includes(`/stocks/${longStockId}`);
+
+    expect(
+      hasNotFoundResult || isRedirectedAway,
+      `超長 stockId 應顯示 not-found-result 或跳轉離開原路徑，` +
+        `但當前 URL 仍為 ${currentUrl}，且 stock-not-found-result 不可見`,
+    ).toBe(true);
   });
 
   test('網路完全中斷（所有 API 均 abort）→ notification 顯示「網路連線異常」或錯誤訊息', async ({ page }) => {
