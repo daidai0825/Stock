@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JMeter 效能測試計劃：Wave 2 個股詳情頁 API 效能基線
+  =====================================================
+
+  測試情境：
+    - 50 concurrent users（虛擬用戶）
+    - 持續 60 秒
+    - Ramp-up 10 秒（每秒增加 5 個用戶）
+    - 涵蓋三個核心端點：
+        1. POST /api/v1/quote/get
+        2. POST /api/v1/fundamental/get
+        3. POST /api/v1/chip/get
+
+  驗收標準（schema-lock §0 + SRS 效能需求）：
+    - p95 Response Time < 500ms（所有端點）
+    - p99 Response Time < 1000ms
+    - Error Rate < 1%（code != 0 計為錯誤）
+    - Throughput >= 50 RPS（50 user / 1s avg）
+
+  已知缺陷提醒：
+    - M-03（Brian）：listQuotes 存在 N+1 查詢；本測試涵蓋 quote/get（單一），
+      perf 影響相對小；Wave 3 補充 listQuotes 壓測後應重新評估 p95 基線。
+    - B-01：stock-infrastructure 若在 CI 尚未修復，需確認後端先正常啟動。
+
+  執行方式：
+    jmeter -n -t wave2_perf_baseline.jmx \
+      -Jbase_url=http://localhost:8080 \
+      -Jtoken=your_bearer_token \
+      -l results/wave2_perf_results.jtl \
+      -e -o reports/wave2_perf_report/
+
+  產出：
+    - results/wave2_perf_results.jtl（JTL 原始記錄）
+    - reports/wave2_perf_report/（HTML 報告，含 p95/p99/RPS/Error Rate）
+-->
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.6">
+  <hashTree>
+
+    <!-- ============================================================ -->
+    <!-- Test Plan -->
+    <!-- ============================================================ -->
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan"
+              testname="Wave 2 Stock Detail API 效能基線測試" enabled="true">
+      <stringProp name="TestPlan.comments">
+        Wave 2 個股詳情頁 API 效能基線。
+        依據：docs/03_spec/20260422_schema-lock_stock-detail-apis.md v1.0
+        驗收標準：p95 &lt; 500ms；error rate &lt; 1%；throughput &gt;= 50 RPS
+      </stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.arguments" elementType="Arguments" guiclass="ArgumentsPanel">
+        <collectionProp name="Arguments.arguments">
+          <elementProp name="BASE_URL" elementType="Argument">
+            <stringProp name="Argument.name">BASE_URL</stringProp>
+            <stringProp name="Argument.value">${__P(base_url,http://localhost:8080)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="ACCESS_TOKEN" elementType="Argument">
+            <stringProp name="Argument.name">ACCESS_TOKEN</stringProp>
+            <stringProp name="Argument.value">${__P(token,test-bearer-token)}</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+          <elementProp name="STOCK_ID" elementType="Argument">
+            <stringProp name="Argument.name">STOCK_ID</stringProp>
+            <stringProp name="Argument.value">2330</stringProp>
+            <stringProp name="Argument.metadata">=</stringProp>
+          </elementProp>
+        </collectionProp>
+      </elementProp>
+    </TestPlan>
+    <hashTree>
+
+      <!-- ============================================================ -->
+      <!-- Thread Group：50 concurrent users / 60s / ramp-up 10s -->
+      <!-- ============================================================ -->
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup"
+                   testname="50 虛擬用戶 - 60 秒持續壓測" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <!-- 虛擬用戶數：50 -->
+        <stringProp name="ThreadGroup.num_threads">50</stringProp>
+        <!-- Ramp-up 時間：10 秒 -->
+        <stringProp name="ThreadGroup.ramp_time">10</stringProp>
+        <!-- 持續時間：60 秒 -->
+        <boolProp name="ThreadGroup.scheduler">true</boolProp>
+        <stringProp name="ThreadGroup.duration">60</stringProp>
+        <stringProp name="ThreadGroup.delay">0</stringProp>
+      </ThreadGroup>
+      <hashTree>
+
+        <!-- ============================================================ -->
+        <!-- HTTP Header Manager（全域）-->
+        <!-- ============================================================ -->
+        <HeaderManager guiclass="HeaderPanel" testclass="HeaderManager"
+                       testname="HTTP Headers（Authorization + Content-Type）" enabled="true">
+          <collectionProp name="HeaderManager.headers">
+            <elementProp name="Content-Type" elementType="Header">
+              <stringProp name="Header.name">Content-Type</stringProp>
+              <stringProp name="Header.value">application/json</stringProp>
+            </elementProp>
+            <elementProp name="Authorization" elementType="Header">
+              <stringProp name="Header.name">Authorization</stringProp>
+              <stringProp name="Header.value">Bearer ${ACCESS_TOKEN}</stringProp>
+            </elementProp>
+          </collectionProp>
+        </HeaderManager>
+        <hashTree/>
+
+        <!-- ============================================================ -->
+        <!-- Throughput Controller：均勻分配三個端點（各 33%）-->
+        <!-- 每個虛擬用戶在 60 秒內隨機輪流打三個 API -->
+        <!-- ============================================================ -->
+
+        <!-- Sampler 1：POST /api/v1/quote/get -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy"
+                          testname="SC-01: quote/get（行情查詢）" enabled="true">
+          <stringProp name="HTTPSampler.path">/api/v1/quote/get</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"stockId": "${STOCK_ID}"}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__regexReplace(${BASE_URL},https?://([^/]+).*,$1$,)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+          <intProp name="HTTPSampler.connect_timeout">5000</intProp>
+          <intProp name="HTTPSampler.response_timeout">10000</intProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <!-- Response Assertion：驗證 code=0（非 code=0 計為邏輯錯誤）-->
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion"
+                             testname="業務碼 = 0" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">0</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">2</intProp>
+            <stringProp name="Assertion.custom_message">quote/get 回傳非 code=0（業務邏輯錯誤）</stringProp>
+          </ResponseAssertion>
+          <hashTree/>
+
+          <!-- Duration Assertion：單次請求不得超過 1000ms（p99 基線） -->
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion"
+                             testname="Response time &lt;= 1000ms（p99 基線）" enabled="true">
+            <stringProp name="DurationAssertion.duration">1000</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Sampler 2：POST /api/v1/fundamental/get -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy"
+                          testname="SC-02: fundamental/get（基本面查詢）" enabled="true">
+          <stringProp name="HTTPSampler.path">/api/v1/fundamental/get</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"stockId": "${STOCK_ID}"}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__regexReplace(${BASE_URL},https?://([^/]+).*,$1$,)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+          <intProp name="HTTPSampler.connect_timeout">5000</intProp>
+          <intProp name="HTTPSampler.response_timeout">10000</intProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion"
+                             testname="業務碼 = 0" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">0</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">2</intProp>
+            <stringProp name="Assertion.custom_message">fundamental/get 回傳非 code=0</stringProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion"
+                             testname="Response time &lt;= 1000ms" enabled="true">
+            <stringProp name="DurationAssertion.duration">1000</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- Sampler 3：POST /api/v1/chip/get -->
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy"
+                          testname="SC-03: chip/get（籌碼查詢）" enabled="true">
+          <stringProp name="HTTPSampler.path">/api/v1/chip/get</stringProp>
+          <stringProp name="HTTPSampler.method">POST</stringProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.postBodyRaw">true</boolProp>
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments">
+            <collectionProp name="Arguments.arguments">
+              <elementProp name="" elementType="HTTPArgument">
+                <boolProp name="HTTPArgument.always_encode">false</boolProp>
+                <stringProp name="Argument.value">{"stockId": "${STOCK_ID}"}</stringProp>
+                <stringProp name="Argument.metadata">=</stringProp>
+              </elementProp>
+            </collectionProp>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">${__regexReplace(${BASE_URL},https?://([^/]+).*,$1$,)}</stringProp>
+          <stringProp name="HTTPSampler.port"></stringProp>
+          <stringProp name="HTTPSampler.protocol">http</stringProp>
+          <stringProp name="HTTPSampler.contentEncoding">UTF-8</stringProp>
+          <intProp name="HTTPSampler.connect_timeout">5000</intProp>
+          <intProp name="HTTPSampler.response_timeout">10000</intProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResponseAssertion guiclass="AssertionGui" testclass="ResponseAssertion"
+                             testname="業務碼 = 0" enabled="true">
+            <collectionProp name="Asserion.test_strings">
+              <stringProp name="49586">0</stringProp>
+            </collectionProp>
+            <stringProp name="Assertion.test_field">Assertion.response_data</stringProp>
+            <boolProp name="Assertion.assume_success">false</boolProp>
+            <intProp name="Assertion.test_type">2</intProp>
+            <stringProp name="Assertion.custom_message">chip/get 回傳非 code=0</stringProp>
+          </ResponseAssertion>
+          <hashTree/>
+          <DurationAssertion guiclass="DurationAssertionGui" testclass="DurationAssertion"
+                             testname="Response time &lt;= 1000ms" enabled="true">
+            <stringProp name="DurationAssertion.duration">1000</stringProp>
+          </DurationAssertion>
+          <hashTree/>
+        </hashTree>
+
+        <!-- ============================================================ -->
+        <!-- Constant Timer：模擬用戶思考時間（100ms）-->
+        <!-- 避免 JMeter 純 CPU 壓測，貼近真實用戶行為 -->
+        <!-- ============================================================ -->
+        <ConstantTimer guiclass="ConstantTimerGui" testclass="ConstantTimer"
+                       testname="Think Time 100ms" enabled="true">
+          <stringProp name="ConstantTimer.delay">100</stringProp>
+        </ConstantTimer>
+        <hashTree/>
+
+      </hashTree>
+
+      <!-- ============================================================ -->
+      <!-- Listeners：結果收集與報告 -->
+      <!-- ============================================================ -->
+
+      <!-- Summary Report（控制台輸出）-->
+      <ResultCollector guiclass="SummaryReport" testclass="ResultCollector"
+                       testname="Summary Report" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <assertionsResultsToSave>0</assertionsResultsToSave>
+            <bytes>true</bytes>
+            <sentBytes>true</sentBytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">results/wave2_perf_results.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- Aggregate Report（p50/p90/p95/p99 統計）-->
+      <ResultCollector guiclass="StatVisualizer" testclass="ResultCollector"
+                       testname="Aggregate Report（p95/p99 關鍵指標）" enabled="true">
+        <boolProp name="ResultCollector.error_logging">false</boolProp>
+        <objProp>
+          <name>saveConfig</name>
+          <value class="SampleSaveConfiguration">
+            <time>true</time>
+            <latency>true</latency>
+            <timestamp>true</timestamp>
+            <success>true</success>
+            <label>true</label>
+            <code>true</code>
+            <message>true</message>
+            <threadName>true</threadName>
+            <dataType>true</dataType>
+            <encoding>false</encoding>
+            <assertions>true</assertions>
+            <subresults>true</subresults>
+            <responseData>false</responseData>
+            <samplerData>false</samplerData>
+            <xml>false</xml>
+            <fieldNames>true</fieldNames>
+            <responseHeaders>false</responseHeaders>
+            <requestHeaders>false</requestHeaders>
+            <responseDataOnError>false</responseDataOnError>
+            <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+            <bytes>true</bytes>
+            <url>true</url>
+            <threadCounts>true</threadCounts>
+            <idleTime>true</idleTime>
+            <connectTime>true</connectTime>
+          </value>
+        </objProp>
+        <stringProp name="filename">results/wave2_perf_aggregate.jtl</stringProp>
+      </ResultCollector>
+      <hashTree/>
+
+      <!-- ============================================================ -->
+      <!-- Backend Listener：即時監控（可整合 InfluxDB + Grafana）-->
+      <!-- 如果沒有 InfluxDB，可刪除此 Listener -->
+      <!-- ============================================================ -->
+      <!--
+      <BackendListener guiclass="BackendListenerGui" testclass="BackendListener"
+                       testname="InfluxDB 即時監控（選用）" enabled="false">
+        <elementProp name="arguments" elementType="Arguments">
+          <collectionProp name="Arguments.arguments">
+            <elementProp name="influxdbMetricsSender" elementType="Argument">
+              <stringProp name="Argument.name">influxdbMetricsSender</stringProp>
+              <stringProp name="Argument.value">org.apache.jmeter.visualizers.backend.influxdb.HttpMetricsSender</stringProp>
+            </elementProp>
+            <elementProp name="influxdbUrl" elementType="Argument">
+              <stringProp name="Argument.name">influxdbUrl</stringProp>
+              <stringProp name="Argument.value">http://localhost:8086/write?db=jmeter</stringProp>
+            </elementProp>
+            <elementProp name="application" elementType="Argument">
+              <stringProp name="Argument.name">application</stringProp>
+              <stringProp name="Argument.value">wave2-stock-detail</stringProp>
+            </elementProp>
+          </collectionProp>
+        </elementProp>
+        <stringProp name="classname">org.apache.jmeter.visualizers.backend.influxdb.InfluxdbBackendListenerClient</stringProp>
+      </BackendListener>
+      <hashTree/>
+      -->
+
+    </hashTree><!-- end TestPlan hashTree -->
+
+  </hashTree><!-- end root hashTree -->
+</jmeterTestPlan>

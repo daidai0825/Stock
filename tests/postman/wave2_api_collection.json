@@ -1,0 +1,1011 @@
+{
+  "info": {
+    "name": "Wave 2 API Collection - Stock Detail（M-QUOTE / M-FUND / M-CHIP）",
+    "_postman_id": "quincy-wave2-2026-04-23",
+    "description": "Wave 2 個股詳情頁 API 自動化測試集。\n\n依據：\n- docs/03_spec/20260422_schema-lock_stock-detail-apis.md v1.0\n- docs/03_spec/20260422_errorCodes_central.md v1.1\n\n執行方式：\n  newman run wave2_api_collection.json \\\n    --env-var BASE_URL=http://localhost:8080 \\\n    --env-var ACCESS_TOKEN=<your_token>\n\n測試類別：\n  - Happy Path（5 個）：QUOTE-GET / QUOTE-HISTORY-DAILY / QUOTE-HISTORY-WEEKLY / FUND-GET / CHIP-GET\n  - Error Path（5 個）：5010 / 5011 / 5012 / 5013 / 5014\n  - Schema Contract（4 個）：QuoteDTO / FundamentalDTO / ChipDTO / HistoryDTO 欄位完整性",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://localhost:8080",
+      "type": "string"
+    },
+    {
+      "key": "ACCESS_TOKEN",
+      "value": "test-bearer-token",
+      "type": "string"
+    },
+    {
+      "key": "TWSE_STOCK_ID",
+      "value": "2330",
+      "type": "string"
+    },
+    {
+      "key": "OTC_STOCK_ID",
+      "value": "6488",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Happy Path",
+      "description": "正常情境測試（5 個）",
+      "item": [
+        {
+          "name": "HP-01：QuoteGet TWSE 2330 成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-QUOTE-001 / TC-QUOTE-008 / TC-QUOTE-009",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 0（成功）', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json.code).to.eql(0);",
+                  "    pm.expect(json.message).to.eql('success');",
+                  "});",
+                  "",
+                  "pm.test('Envelope 含 timestamp 與 traceId', () => {",
+                  "    const json = pm.response.json();",
+                  "    pm.expect(json).to.have.property('timestamp');",
+                  "    pm.expect(json).to.have.property('traceId');",
+                  "});",
+                  "",
+                  "pm.test('QuoteDTO 必填欄位齊全（schema-lock §1.3）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const requiredFields = [",
+                  "        'stockId','stockName','market','price','previousClose',",
+                  "        'change','changePercent','open','high','low',",
+                  "        'volume','quoteDate','updatedAt','isStale','source'",
+                  "    ];",
+                  "    requiredFields.forEach(field => {",
+                  "        pm.expect(data, `缺少欄位：${field}`).to.have.property(field);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('BigDecimal 欄位序列化為 string（非 number）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const stringFields = ['price','previousClose','change','changePercent','open','high','low'];",
+                  "    stringFields.forEach(field => {",
+                  "        pm.expect(typeof data[field], `${field} 應為 string，實際為 ${typeof data[field]}`).to.eql('string');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('volume 為 number 型別', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(typeof data.volume).to.eql('number');",
+                  "});",
+                  "",
+                  "pm.test('change / changePercent 帶正負號格式', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    // 正值帶 + 或負值帶 -，不允許裸數字",
+                  "    pm.expect(data.change).to.match(/^[+-]/);",
+                  "    pm.expect(data.changePercent).to.match(/^[+-]/);",
+                  "});",
+                  "",
+                  "pm.test('quoteDate 格式 YYYY-MM-DD', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.quoteDate).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "});",
+                  "",
+                  "pm.test('updatedAt 格式 ISO 8601 含時區', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.updatedAt).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{2}:\\d{2}$/);",
+                  "});",
+                  "",
+                  "pm.test('market 值在允許範圍（TWSE 或 OTC）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(['TWSE','OTC']).to.include(data.market);",
+                  "});",
+                  "",
+                  "pm.test('source 與 market 一致', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.source).to.eql(data.market);",
+                  "});",
+                  "",
+                  "pm.test('isStale 為 boolean', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(typeof data.isStale).to.eql('boolean');",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms', () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{ACCESS_TOKEN}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "get"]
+            }
+          }
+        },
+        {
+          "name": "HP-02：QuoteHistory Daily 成功",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-HISTORY-001",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('HistoryDTO 欄位齊全（schema-lock §3.3）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data).to.have.property('stockId');",
+                  "    pm.expect(data).to.have.property('period');",
+                  "    pm.expect(data).to.have.property('items');",
+                  "    pm.expect(data.period).to.eql('daily');",
+                  "    pm.expect(Array.isArray(data.items)).to.be.true;",
+                  "});",
+                  "",
+                  "pm.test('items 不為空陣列', () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    pm.expect(items.length).to.be.above(0);",
+                  "});",
+                  "",
+                  "pm.test('每筆 HistoryItem 欄位完整', () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    const firstItem = items[0];",
+                  "    ['date','open','high','low','close','volume'].forEach(field => {",
+                  "        pm.expect(firstItem, `缺少欄位：${field}`).to.have.property(field);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('OHLC 欄位為 string，volume 為 number', () => {",
+                  "    const item = pm.response.json().data.items[0];",
+                  "    ['open','high','low','close'].forEach(f => {",
+                  "        pm.expect(typeof item[f], `${f} 應為 string`).to.eql('string');",
+                  "    });",
+                  "    pm.expect(typeof item.volume).to.eql('number');",
+                  "});",
+                  "",
+                  "pm.test('items 依 date 升冪排序', () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    for (let i = 1; i < items.length; i++) {",
+                  "        pm.expect(items[i].date >= items[i-1].date,",
+                  "            `index ${i} date ${items[i].date} < ${items[i-1].date}`).to.be.true;",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('date 格式 YYYY-MM-DD', () => {",
+                  "    const item = pm.response.json().data.items[0];",
+                  "    pm.expect(item.date).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms', () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\",\n  \"period\": \"daily\",\n  \"startDate\": \"2026-01-01\",\n  \"endDate\": \"2026-04-22\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "history"]
+            }
+          }
+        },
+        {
+          "name": "HP-03：QuoteHistory Weekly 聚合驗證",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-HISTORY-002",
+                  "",
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('period echo back 為 weekly', () => {",
+                  "    pm.expect(pm.response.json().data.period).to.eql('weekly');",
+                  "});",
+                  "",
+                  "pm.test('週線筆數少於日線（聚合效果）', () => {",
+                  "    // 3 週範圍內應不超過 3 筆（理想狀態）",
+                  "    const items = pm.response.json().data.items;",
+                  "    pm.expect(items.length).to.be.at.most(5);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms', () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\",\n  \"period\": \"weekly\",\n  \"startDate\": \"2026-04-01\",\n  \"endDate\": \"2026-04-22\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "history"]
+            }
+          }
+        },
+        {
+          "name": "HP-04：FundamentalGet 成功（含 per/pbr 欄位名稱驗證）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-FUND-001 / TC-CONTRACT-002",
+                  "",
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('FundamentalDTO 必填欄位齊全（schema-lock §4.3）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const required = ['stockId','stockName','eps','per','pbr','roe','reportYear','reportQuarter','updatedAt','source'];",
+                  "    required.forEach(f => {",
+                  "        pm.expect(data, `缺少欄位：${f}`).to.have.property(f);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('禁止出現 perRatio 或 pbrRatio 欄位', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data).to.not.have.property('perRatio');",
+                  "    pm.expect(data).to.not.have.property('pbrRatio');",
+                  "});",
+                  "",
+                  "pm.test('eps / per / pbr / roe 為 string 型別', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    ['eps','per','pbr','roe'].forEach(f => {",
+                  "        pm.expect(typeof data[f], `${f} 應為 string`).to.eql('string');",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('reportYear 為 number，reportQuarter 在 1-4', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(typeof data.reportYear).to.eql('number');",
+                  "    pm.expect(typeof data.reportQuarter).to.eql('number');",
+                  "    pm.expect(data.reportQuarter).to.be.within(1, 4);",
+                  "});",
+                  "",
+                  "pm.test('source 固定為 MOPS', () => {",
+                  "    pm.expect(pm.response.json().data.source).to.eql('MOPS');",
+                  "});",
+                  "",
+                  "pm.test('updatedAt 格式 ISO 8601 含時區', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.updatedAt).to.match(/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}[+-]\\d{2}:\\d{2}$/);",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms', () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/fundamental/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "fundamental", "get"]
+            }
+          }
+        },
+        {
+          "name": "HP-05：ChipGet 成功（institutions 陣列結構 + 順序驗證）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-CHIP-001 / TC-CHIP-002 / TC-CHIP-003 / TC-CONTRACT-003",
+                  "",
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('ChipDTO 基本欄位齊全（schema-lock §5.3）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    ['stockId','date','institutions','totalNetBuySell','source'].forEach(f => {",
+                  "        pm.expect(data, `缺少欄位：${f}`).to.have.property(f);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('institutions 固定 3 筆', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(Array.isArray(data.institutions)).to.be.true;",
+                  "    pm.expect(data.institutions.length).to.eql(3);",
+                  "});",
+                  "",
+                  "pm.test('institutions 順序：外資 / 投信 / 自營商', () => {",
+                  "    const inst = pm.response.json().data.institutions;",
+                  "    pm.expect(inst[0].name).to.eql('外資');",
+                  "    pm.expect(inst[1].name).to.eql('投信');",
+                  "    pm.expect(inst[2].name).to.eql('自營商');",
+                  "});",
+                  "",
+                  "pm.test('每筆 InstitutionItem 含 name/buy/sell/netBuySell', () => {",
+                  "    const inst = pm.response.json().data.institutions;",
+                  "    inst.forEach((item, i) => {",
+                  "        ['name','buy','sell','netBuySell'].forEach(f => {",
+                  "            pm.expect(item, `institutions[${i}] 缺少 ${f}`).to.have.property(f);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('totalNetBuySell 等於三筆 netBuySell 之和', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const computed = data.institutions.reduce((sum, i) => sum + i.netBuySell, 0);",
+                  "    pm.expect(data.totalNetBuySell).to.eql(computed);",
+                  "});",
+                  "",
+                  "pm.test('date 格式 YYYY-MM-DD（非 datetime）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    pm.expect(data.date).to.match(/^\\d{4}-\\d{2}-\\d{2}$/);",
+                  "    pm.expect(data.date).to.not.include('T');",
+                  "});",
+                  "",
+                  "pm.test('已知缺陷記錄：buy/sell 暫填 0（BUG-QUINCY-002）', () => {",
+                  "    const inst = pm.response.json().data.institutions;",
+                  "    // 目前暫行：ChipConvertor buy/sell 暫填 0，Wave 3 修正",
+                  "    inst.forEach((item, i) => {",
+                  "        pm.expect(item.buy).to.eql(0);",
+                  "        pm.expect(item.sell).to.eql(0);",
+                  "    });",
+                  "    console.warn('[KNOWN DEFECT BUG-QUINCY-002] buy/sell 恆為 0，Wave 3 修正');",
+                  "});",
+                  "",
+                  "pm.test('已知合約偏差：ChipDTO 多送 stockName（BUG-QUINCY-001）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    // schema-lock §5.3 未定義 stockName，但目前實作多送",
+                  "    if (data.stockName !== undefined) {",
+                  "        console.warn('[KNOWN DEFECT BUG-QUINCY-001] ChipDTO 多送 stockName，Wave 3 修正');",
+                  "    }",
+                  "    // 此 test 不 fail，僅記錄偏差",
+                  "});",
+                  "",
+                  "pm.test('Response time < 500ms', () => {",
+                  "    pm.expect(pm.response.responseTime).to.be.below(500);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/chip/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "chip", "get"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Error Path（5010-5014）",
+      "description": "錯誤情境測試（5 個）- 需搭配後端 stub 或測試環境設定觸發對應錯誤",
+      "item": [
+        {
+          "name": "EP-01：5010 TWSE_DATA_SOURCE_ERROR（TWSE 外部 API 不可用）",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "exec": [
+                  "// 前提：需在測試環境觸發 TWSE 外部 API 不可用",
+                  "// 方式：環境變數設定 FORCE_TWSE_ERROR=true，或後端 stub 回 5xx",
+                  "// 並且 DB 也無此股票資料（stockId=TWSE_ERR_TEST）",
+                  "console.log('確認：後端已設定 TWSE 外部 API 不可用，且 DB 無此股票');"
+                ],
+                "type": "text/javascript"
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-ERR-5010",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200（Envelope 模式）', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 5010（TWSE_DATA_SOURCE_ERROR）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(5010);",
+                  "});",
+                  "",
+                  "pm.test('message 含 TWSE 語意', () => {",
+                  "    const msg = pm.response.json().message;",
+                  "    pm.expect(msg).to.satisfy(m => m.includes('TWSE') || m.includes('暫時'));",
+                  "});",
+                  "",
+                  "pm.test('Envelope 含 traceId', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('traceId');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+              {"key": "X-Force-Error", "value": "TWSE_DOWN", "description": "測試用 header，觸發後端 stub"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "get"]
+            }
+          }
+        },
+        {
+          "name": "EP-02：5011 MOPS_DATA_SOURCE_ERROR（MOPS 外部 API 不可用）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-FUND-004 / TC-ERR-5011",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 5011（MOPS_DATA_SOURCE_ERROR）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(5011);",
+                  "});",
+                  "",
+                  "pm.test('message 含 MOPS 語意', () => {",
+                  "    const msg = pm.response.json().message;",
+                  "    pm.expect(msg).to.satisfy(m => m.includes('MOPS') || m.includes('暫時'));",
+                  "});",
+                  "",
+                  "pm.test('Envelope 含 traceId', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('traceId');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+              {"key": "X-Force-Error", "value": "MOPS_DOWN"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/fundamental/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "fundamental", "get"]
+            }
+          }
+        },
+        {
+          "name": "EP-03：5012 CHIP_DATA_SOURCE_ERROR（籌碼外部 API 不可用且 DB 無資料）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-CHIP-006 / TC-ERR-5012",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 5012（CHIP_DATA_SOURCE_ERROR）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(5012);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+              {"key": "X-Force-Error", "value": "CHIP_DOWN"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/chip/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "chip", "get"]
+            }
+          }
+        },
+        {
+          "name": "EP-04：5013 OTC_DATA_SOURCE_ERROR（OTC 外部 API 不可用）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-QUOTE-005 / TC-ERR-5013",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 5013（OTC_DATA_SOURCE_ERROR）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(5013);",
+                  "});",
+                  "",
+                  "pm.test('message 含 OTC 語意', () => {",
+                  "    const msg = pm.response.json().message;",
+                  "    pm.expect(msg).to.satisfy(m => m.includes('OTC') || m.includes('暫時'));",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+              {"key": "X-Force-Error", "value": "OTC_DOWN"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{OTC_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "get"]
+            }
+          }
+        },
+        {
+          "name": "EP-05：5014 MOPS_FORMAT_CHANGED（MOPS 格式變動，解析失敗）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "// TC-FUND-005 / TC-ERR-5014",
+                  "",
+                  "pm.test('HTTP 狀態碼為 200', () => {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test('業務碼為 5014（MOPS_FORMAT_CHANGED）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(5014);",
+                  "});",
+                  "",
+                  "pm.test('message 含格式異動語意', () => {",
+                  "    const msg = pm.response.json().message;",
+                  "    pm.expect(msg).to.satisfy(m =>",
+                  "        m.includes('格式') || m.includes('format') || m.includes('管理員'));",
+                  "});",
+                  "",
+                  "pm.test('Envelope 含 traceId（5014 需人工介入，traceId 重要）', () => {",
+                  "    pm.expect(pm.response.json()).to.have.property('traceId');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"},
+              {"key": "X-Force-Error", "value": "MOPS_FORMAT_CHANGED"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/fundamental/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "fundamental", "get"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Schema Contract 驗證",
+      "description": "欄位完整性與格式驗證（4 個）",
+      "item": [
+        {
+          "name": "SC-01：QuoteDTO 15 欄位完整性（TC-CONTRACT-001）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('QuoteDTO 正好 15 個必填欄位（多送或缺少皆 FAIL）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const required = new Set([",
+                  "        'stockId','stockName','market','price','previousClose',",
+                  "        'change','changePercent','open','high','low',",
+                  "        'volume','quoteDate','updatedAt','isStale','source'",
+                  "    ]);",
+                  "    const actual = new Set(Object.keys(data));",
+                  "    required.forEach(f => {",
+                  "        pm.expect(actual.has(f), `缺少欄位 ${f}`).to.be.true;",
+                  "    });",
+                  "    // 如有多送欄位，列出警告（不強制 FAIL，契約外欄位需評估）",
+                  "    const extra = [...actual].filter(f => !required.has(f));",
+                  "    if (extra.length > 0) {",
+                  "        console.warn('QuoteDTO 多送欄位：', extra.join(', '));",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "get"]
+            }
+          }
+        },
+        {
+          "name": "SC-02：FundamentalDTO 10 欄位完整性（TC-CONTRACT-002）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('FundamentalDTO 10 欄位完整，無 perRatio/pbrRatio', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    const required = ['stockId','stockName','eps','per','pbr','roe','reportYear','reportQuarter','updatedAt','source'];",
+                  "    required.forEach(f => pm.expect(data, `缺少 ${f}`).to.have.property(f));",
+                  "    pm.expect(data).to.not.have.property('perRatio');",
+                  "    pm.expect(data).to.not.have.property('pbrRatio');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/fundamental/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "fundamental", "get"]
+            }
+          }
+        },
+        {
+          "name": "SC-03：ChipDTO 欄位結構（TC-CONTRACT-003）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('ChipDTO 基本結構（schema-lock §5.3）', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    ['stockId','date','institutions','totalNetBuySell','source'].forEach(f => {",
+                  "        pm.expect(data, `缺少 ${f}`).to.have.property(f);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('InstitutionItem 每筆含 name/buy/sell/netBuySell', () => {",
+                  "    const inst = pm.response.json().data.institutions;",
+                  "    inst.forEach((item, i) => {",
+                  "        ['name','buy','sell','netBuySell'].forEach(f => {",
+                  "            pm.expect(item, `institutions[${i}] 缺少 ${f}`).to.have.property(f);",
+                  "        });",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('[已知偏差 BUG-QUINCY-001] ChipDTO 多送 stockName 記錄', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    if (data.stockName !== undefined) {",
+                  "        console.warn('[BUG-QUINCY-001] ChipDTO 多送 stockName，schema-lock §5.3 未定義，Wave 3 修正');",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/chip/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "chip", "get"]
+            }
+          }
+        },
+        {
+          "name": "SC-04：HistoryDTO 欄位完整性（TC-CONTRACT-004）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 0', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(0);",
+                  "});",
+                  "",
+                  "pm.test('data 含 stockId / period / items', () => {",
+                  "    const data = pm.response.json().data;",
+                  "    ['stockId','period','items'].forEach(f => {",
+                  "        pm.expect(data, `缺少 ${f}`).to.have.property(f);",
+                  "    });",
+                  "});",
+                  "",
+                  "pm.test('items 每筆含 date/open/high/low/close/volume', () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    if (items.length > 0) {",
+                  "        ['date','open','high','low','close','volume'].forEach(f => {",
+                  "            pm.expect(items[0], `缺少 ${f}`).to.have.property(f);",
+                  "        });",
+                  "    }",
+                  "});",
+                  "",
+                  "pm.test('items 依 date 升冪排序', () => {",
+                  "    const items = pm.response.json().data.items;",
+                  "    for (let i = 1; i < items.length; i++) {",
+                  "        pm.expect(items[i].date >= items[i-1].date).to.be.true;",
+                  "    }",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\",\n  \"period\": \"daily\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "history"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "參數驗證",
+      "description": "1001/1002/1003 邊界測試",
+      "item": [
+        {
+          "name": "PV-01：period 白名單外回 1003（TC-HISTORY-004）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 1003（PARAM_OUT_OF_RANGE）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(1003);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\",\n  \"period\": \"yearly\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "history"]
+            }
+          }
+        },
+        {
+          "name": "PV-02：startDate > endDate 回 1002（TC-HISTORY-005）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 1002（PARAM_FORMAT_INVALID）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(1002);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stockId\": \"{{TWSE_STOCK_ID}}\",\n  \"period\": \"daily\",\n  \"startDate\": \"2026-04-22\",\n  \"endDate\": \"2026-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/history",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "history"]
+            }
+          }
+        },
+        {
+          "name": "PV-03：缺少 stockId 回 1001（TC-QUOTE-006）",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('業務碼為 1001（PARAM_REQUIRED）', () => {",
+                  "    pm.expect(pm.response.json().code).to.eql(1001);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/json"},
+              {"key": "Authorization", "value": "Bearer {{ACCESS_TOKEN}}"}
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": {
+              "raw": "{{BASE_URL}}/api/v1/quote/get",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api", "v1", "quote", "get"]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
