@@ -13,10 +13,12 @@ import java.util.List;
  * {@code totalNetBuySell} = 三筆 netBuySell 加總，由後端計算（前端不得自行加總）。
  * {@code date}：原欄位名 tradeDate，重命名為 date。
  * {@code source}：資料來源（"TWSE" 或 "OTC"）。
+ * <p>
+ * BUG-QUINCY-001：移除 stockName 欄位；stockName 已由 /quote/get 與 /fundamental/get 提供，
+ * /chip/get 職責僅限三大法人買賣超，不重複傳遞。
  */
 public record ChipDTO(
     String stockId,
-    String stockName,
     LocalDate date,
     List<InstitutionItem> institutions,
     long totalNetBuySell,

@@ -43,7 +43,6 @@ public interface ChipConvertor {
 
         return new ChipDTO(
             po.getStockId(),
-            po.getStockName(),
             po.getTradeDate(),      // tradeDate → date
             institutions,
             total,                  // totalInstitutionalNet → totalNetBuySell

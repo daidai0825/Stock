@@ -201,7 +201,7 @@ class ChipServiceImplTest {
 
     private ChipDTO buildChipDTO(String stockId) {
         return new ChipDTO(
-            stockId, "台積電",
+            stockId,
             LocalDate.now(),
             List.of(
                 new InstitutionItem("外資",   0L, 0L, 5_000L),
