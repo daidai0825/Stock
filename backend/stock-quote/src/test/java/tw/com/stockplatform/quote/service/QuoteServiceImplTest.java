@@ -34,6 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -100,7 +101,8 @@ class QuoteServiceImplTest {
         when(quoteMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
         when(tradingCalendarService.isValidRecentTradingDay(today, today)).thenReturn(true);
         when(quoteMapper.findPreviousByStockId(eq("2330"), eq(today))).thenReturn(Optional.empty());
-        when(quoteConvertor.toDTO(eq(po), any())).thenReturn(dto);
+        // previousClose 為 null（無前一交易日資料），需用 nullable() 而非 any()
+        when(quoteConvertor.toDTO(eq(po), nullable(BigDecimal.class))).thenReturn(dto);
 
         QuoteDTO result = quoteService.getQuote(new QuoteGetRequest("2330"));
 
@@ -120,7 +122,8 @@ class QuoteServiceImplTest {
         when(quoteMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
         when(tradingCalendarService.isValidRecentTradingDay(eq(friday), any())).thenReturn(true);
         when(quoteMapper.findPreviousByStockId(eq("2330"), eq(friday))).thenReturn(Optional.empty());
-        when(quoteConvertor.toDTOStale(eq(po), any())).thenReturn(staleDto);
+        // previousClose 為 null（週末查詢無前一交易日），需用 nullable()
+        when(quoteConvertor.toDTOStale(eq(po), nullable(BigDecimal.class))).thenReturn(staleDto);
 
         QuoteDTO result = quoteService.getQuote(new QuoteGetRequest("2330"));
 
@@ -140,12 +143,13 @@ class QuoteServiceImplTest {
         when(twseClient.fetchDailyQuotes(any())).thenReturn(List.of());
         when(otcClient.fetchDailyQuotes(any())).thenReturn(List.of());
         when(quoteMapper.findPreviousByStockId(eq("2330"), eq(friday))).thenReturn(Optional.empty());
-        when(quoteConvertor.toDTOStale(eq(po), any())).thenReturn(staleDto);
+        // previousClose 為 null（fallback 情境），需用 nullable()
+        when(quoteConvertor.toDTOStale(eq(po), nullable(BigDecimal.class))).thenReturn(staleDto);
 
         QuoteDTO result = quoteService.getQuote(new QuoteGetRequest("2330"));
 
         assertThat(result.isStale()).isTrue();
-        verify(quoteConvertor).toDTOStale(eq(po), any());
+        verify(quoteConvertor).toDTOStale(eq(po), nullable(BigDecimal.class));
     }
 
     @Test
@@ -153,7 +157,7 @@ class QuoteServiceImplTest {
     void getQuote_NoDbNoExternal_ThrowsStockNotFound() {
         when(valueOperations.get(anyString())).thenReturn(null);
         when(quoteMapper.findLatestByStockId("9999")).thenReturn(Optional.empty());
-        when(tradingCalendarService.isValidRecentTradingDay(any(), any())).thenReturn(false);
+        // DB 為空，production 短路跳過 isValidRecentTradingDay 檢查，無需 stub。
         when(twseClient.fetchDailyQuotes(any())).thenReturn(List.of());
         when(otcClient.fetchDailyQuotes(any())).thenReturn(List.of());
 
@@ -169,12 +173,13 @@ class QuoteServiceImplTest {
         QuoteDTO dto = buildQuoteDTO("2330", false);
         when(valueOperations.get(anyString())).thenReturn(null);
         when(quoteMapper.findLatestByStockId("2330")).thenReturn(Optional.empty());
-        when(tradingCalendarService.isValidRecentTradingDay(any(), any())).thenReturn(false);
+        // DB 為空，production 短路跳過 isValidRecentTradingDay，無需 stub。
         when(twseClient.fetchDailyQuotes(any())).thenReturn(List.of(twseDto));
         when(quoteConvertor.fromTWSEDaily(any(), any())).thenReturn(po);
         when(quoteMapper.upsert(any())).thenReturn(1);
-        when(quoteMapper.findPreviousByStockId(eq("2330"), any())).thenReturn(Optional.empty());
-        when(quoteConvertor.toDTO(eq(po), any())).thenReturn(dto);
+        when(quoteMapper.findPreviousByStockId(eq("2330"), any(LocalDate.class))).thenReturn(Optional.empty());
+        // previousClose 為 null（首次資料），需用 nullable()
+        when(quoteConvertor.toDTO(eq(po), nullable(BigDecimal.class))).thenReturn(dto);
 
         QuoteDTO result = quoteService.getQuote(new QuoteGetRequest("2330"));
 

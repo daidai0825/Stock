@@ -1,9 +1,12 @@
 package tw.com.stockplatform.infrastructure.config;
 
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
 import org.apache.hc.client5.http.impl.classic.HttpClients;
 import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
 import org.apache.hc.client5.http.io.HttpClientConnectionManager;
 import org.apache.hc.core5.util.TimeValue;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +24,11 @@ import org.springframework.web.client.RestClient;
  * 依 SSRF 防護原則各 Client 使用固定 baseUrl，不接受使用者輸入。
  * <p>
  * M-BE-W2-03: 移除 fallback，dev/prod 強制外部注入；local 已在 application-local.yml 設定。
+ * <p>
+ * B-01 修正（Spring 6.1+ 編譯 blocker）:
+ * {@code HttpComponentsClientHttpRequestFactory.setReadTimeout(int)} 在 Spring Framework 6.1+
+ * 已被移除。改用 Apache HttpClient 5 {@code RequestConfig.setResponseTimeout} 設定讀取逾時，
+ * 行為與原 setReadTimeout 等效。
  */
 @Configuration
 public class RestClientConfig {
@@ -66,9 +74,9 @@ public class RestClientConfig {
     /**
      * M-BE-W2-04: HttpClient 5 連線池工廠。
      * <p>
-     * 使用共用 ConnectionManager；各 RestClient bean 各自建立 HttpClient 實例，
-     * 但共享底層連線池設定（每次 buildRequestFactory() 都建立獨立的 CM，
-     * 確保 per-host 限流各自隔離）。
+     * B-01: Spring 6.1+ 移除了 setReadTimeout(int)，改在 RequestConfig 層設定
+     * responseTimeout（語義等同原 read timeout）。connectTimeout 仍透過
+     * factory.setConnectTimeout 設定以保持一致性。
      */
     private HttpComponentsClientHttpRequestFactory buildRequestFactory() {
         HttpClientConnectionManager connectionManager =
@@ -78,15 +86,22 @@ public class RestClientConfig {
                 .setConnectionTimeToLive(TimeValue.ofSeconds(30))
                 .build();
 
-        var httpClient = HttpClients.custom()
+        // B-01: 以 RequestConfig 設定 responseTimeout，取代已移除的 setReadTimeout
+        RequestConfig requestConfig = RequestConfig.custom()
+            .setConnectionRequestTimeout(Timeout.ofMilliseconds(CONNECT_TIMEOUT_MS))
+            .setResponseTimeout(Timeout.ofMilliseconds(RESPONSE_TIMEOUT_MS))
+            .build();
+
+        CloseableHttpClient httpClient = HttpClients.custom()
             .setConnectionManager(connectionManager)
+            .setDefaultRequestConfig(requestConfig)
             .evictIdleConnections(TimeValue.ofSeconds(60))
             .build();
 
         HttpComponentsClientHttpRequestFactory factory =
             new HttpComponentsClientHttpRequestFactory(httpClient);
         factory.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        factory.setReadTimeout(RESPONSE_TIMEOUT_MS);
+        // 不再呼叫 factory.setReadTimeout()（Spring 6.1+ 已移除）
         return factory;
     }
 }

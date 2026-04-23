@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tw.com.stockplatform.common.exception.BusinessException;
@@ -45,6 +47,10 @@ import static org.mockito.Mockito.when;
  * </ul>
  */
 @ExtendWith(MockitoExtension.class)
+// 參數驗證類測試（StartDateAfterEndDate / ExceedsMaxRange）會在進入 cache lookup 前拋例外，
+// 共用的 setUp() Redis stub 在這些案例中變成 unnecessary stubbing。
+// 採 LENIENT 允許共用 stub 並列存在；個別測試仍可透過 verify 驗證互動次數。
+@MockitoSettings(strictness = Strictness.LENIENT)
 class QuoteHistoryAggregationTest {
 
     @Mock

@@ -22,6 +22,14 @@
             <groupId>tw.com.stockplatform</groupId>
             <artifactId>stock-common</artifactId>
         </dependency>
+        <!--
+            stock-domain：顯式宣告為直接依賴（與 stock-quote / stock-chip 同樣處理）。
+            測試 classpath 在某些情況下無法解析遞移依賴，導致 PO 找不到。
+        -->
+        <dependency>
+            <groupId>tw.com.stockplatform</groupId>
+            <artifactId>stock-domain</artifactId>
+        </dependency>
         <dependency>
             <groupId>org.mybatis.spring.boot</groupId>
             <artifactId>mybatis-spring-boot-starter</artifactId>

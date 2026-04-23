@@ -8,6 +8,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tw.com.stockplatform.domain.po.StockFundamentalPO;
@@ -41,6 +43,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * （per/pbr 去掉 Ratio 字尾 + source="MOPS" + updatedAt）。
  */
 @ExtendWith(MockitoExtension.class)
+// fundamentalConvertor_ToDTO_CorrectFieldMapping 直接 new Convertor，不依賴 mock，
+// 使共用的 setUp() Redis stub 變成 unnecessary stubbing。採 LENIENT 允許共用 stub。
+@MockitoSettings(strictness = Strictness.LENIENT)
 class FundamentalServiceImplTest {
 
     @Mock

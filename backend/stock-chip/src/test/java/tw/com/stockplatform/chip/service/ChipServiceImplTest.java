@@ -7,6 +7,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tw.com.stockplatform.chip.convertor.ChipConvertor;
@@ -43,6 +45,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Round 2 變更：ChipDTO 結構改為 schema-lock v1.0（institutions 陣列 + date + source + totalNetBuySell）。
  */
 @ExtendWith(MockitoExtension.class)
+// 部分測試（NotFound / FetchFromTWSE / Convertor 直測）會因 production 短路或不依賴 mock
+// 而讓共用 setUp() 的 redisTemplate stub 變成 unnecessary stubbing。
+// 採 LENIENT 允許共用 stub；個別測試仍透過 verify 驗證互動次數。
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ChipServiceImplTest {
 
     @Mock
@@ -91,7 +97,8 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(today, any())).thenReturn(true);
+        // 同一 stub 內混用具體值與 matcher 會觸發 InvalidUseOfMatchers，需全部 matcher 化。
+        when(tradingCalendarService.isValidRecentTradingDay(eq(today), any())).thenReturn(true);
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
         ChipDTO result = chipService.getChip(new ChipGetRequest("2330"));
@@ -108,7 +115,8 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(friday, any())).thenReturn(true);
+        // matcher 化避免 InvalidUseOfMatchers
+        when(tradingCalendarService.isValidRecentTradingDay(eq(friday), any())).thenReturn(true);
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
         ChipDTO result = chipService.getChip(new ChipGetRequest("2330"));
@@ -125,7 +133,8 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(friday, any())).thenReturn(false);
+        // matcher 化避免 InvalidUseOfMatchers
+        when(tradingCalendarService.isValidRecentTradingDay(eq(friday), any())).thenReturn(false);
         when(twseClient.fetchInstitutional(any())).thenReturn(List.of());
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
