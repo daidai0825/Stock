@@ -25,6 +25,10 @@ replay_pid*
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Maven dependency scan artifacts (Linus 週報自動產生，不入庫)
+dependency-tree.txt
+**/dependency-tree.txt
+
 # Gradle
 .gradle/
 gradle-app.setting
