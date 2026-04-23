@@ -2,36 +2,51 @@
 
 > 為散戶投資人設計的響應式 Web 股票分析平台
 > 
-> v1 MVP 預計 2026 Q3/Q4 上線
+> **v0.2.0（Wave 2）已發布** | 個股詳情頁上線 | 4 個核心 API + 完整前端
 
 ![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
-![Coverage](https://img.shields.io/badge/coverage-45%25-yellow)
+![Coverage](https://img.shields.io/badge/coverage-82%25-yellowgreen)
 ![License](https://img.shields.io/badge/license-proprietary-blue)
-![Version](https://img.shields.io/badge/version-v1.0.0--alpha-lightgray)
+![Version](https://img.shields.io/badge/version-v0.2.0-brightgreen)
 
 ---
 
-## ✨ 功能特色（v1 MVP）
+## ✨ 功能特色
 
-### 已實作（Wave 1 + Wave 2 + Wave B）
+### Wave 2 已完成（v0.2.0）
 
-- **即時行情查詢**：台灣證交所（TWSE）上市股票 + OTC 上櫃股票，T+1 收盤資料
-- **個股詳情頁**：K 線圖（日/週/月線切換，使用 TradingView Lightweight Charts）、基本面分析（EPS、PER、PBR、ROE）、三大法人買賣超籌碼分析
-- **行情數據來源**：
-  - 上市行情：TWSE 公開資訊觀測站
-  - 基本面：MOPS（公開資訊觀測站）
-  - 籌碼資料：TWSE 三大法人買賣
-- **會員管理**：註冊、登入、個人資料修改、會話管理（JWT Access Token）
-- **自選股清單**（Wave B）：加入、移除、查看自選股列表
-- **響應式設計**：完整支援手機、平板、桌機
+**個股詳情頁 + 4 個核心 API**
 
-### 規劃中（Wave C/D）
+- ✅ **POST `/api/v1/quote/get`**：單一股票行情（價格、漲跌、成交量）
+- ✅ **POST `/api/v1/quote/list`**：批次行情查詢（最多 50 檔自選股）
+- ✅ **POST `/api/v1/quote/history`**：K 線歷史資料（日/週/月線聚合）
+- ✅ **POST `/api/v1/fundamental/get`**：基本面指標（EPS、PE、PB、ROE）
+- ✅ **POST `/api/v1/chip/get`**：三大法人買賣超籌碼
+- ✅ **前端 StockDetail 頁面**：PriceHeader + KLineChart + FundamentalCard + ChipCard
+- ✅ **多語言支援**：繁體中文（預設）+ 英文（query param / localStorage）
+- ✅ **錯誤碼中央化**：5010-5014 統一管理
+- ✅ **自動 fallback**：外部資料不可用時使用 DB 快取（`isStale=true` 標記）
 
-- 完整 Refresh Token 與 Access Token 自動更新
-- Email 信箱驗證流程
-- 密碼重設、帳號註銷
-- Telegram / FCM 推播通知
-- 多語系支援（英文、繁體中文）
+**Code Review & QA 通過率**
+- 後端 Code Review：✅ Brian（資深 Reviewer）通過
+- 前端 Code Review：✅ Fiona（資深 Reviewer）通過
+- QA 交叉驗証：✅ Quincy + Quinn（99.5% 通過率）
+- SonarQube：✅ 覆蓋率 82%（後端）/ 76%（前端）
+- CVE 掃描：✅ 0 Critical（Linus）
+
+### Wave 1 已完成
+
+- ✅ 會員管理：註冊、登入、JWT 認證
+- ✅ 自選股清單（CRUD）
+- ✅ 響應式設計：手機 / 平板 / 桌機
+
+### 規劃中（Wave 3 以後）
+
+- 📅 股票提醒設定（停損停利）
+- 📅 推播通知（Email / FCM）
+- 📅 AI 綜合評分 + 買賣訊號
+- 📅 Spring Security RBAC（角色權限系統）
+- 📅 E2E 測試完備（Playwright）
 
 ---
 
@@ -253,35 +268,41 @@ npm run test:e2e
 
 ---
 
-## 📚 文件導覽
+## 📚 Wave 2 文件導覽
 
-### 使用者文件
+### 📋 對外發布文件（Wave 2 v0.2.0）
 
-- [使用者手冊](docs/09_documentation/USER_GUIDE.md) — 散戶投資人如何使用平台
-- [疑難排解](docs/09_documentation/TROUBLESHOOTING.md) — 常見問題與解決方案
+| 文件 | 對象 | 內容 |
+|------|------|------|
+| **[Release Notes](docs/09_documentation/20260423_wave2_release-notes.md)** | 所有人 | v0.2.0 新功能、已知問題、升級指引 |
+| **[API 對外手冊](docs/09_documentation/20260423_wave2_api-handbook.md)** | 前端工程師 / 整合方 | 5 個 API 完整說明、錯誤碼、cURL 範例 |
+| **[前端開發指南](docs/09_documentation/20260423_wave2_frontend-dev-guide.md)** | 前端工程師 | StockDetail 元件、hooks、i18n、錯誤處理 |
+| **[部署 / 維運手冊](docs/09_documentation/20260423_wave2_ops-handbook.md)** | DevOps / SRE | 本機 / Docker / AWS 部署、故障排除、DR 演練 |
 
-### 開發者文件
+### 🔧 技術規格文件
 
-- [API 文件](docs/03_spec/20260422_schema-lock_stock-detail-apis.md) — REST API 完整契約
-- [架構說明](docs/04_architecture/system/) — 系統架構、模組劃分、設計決策
-- [開發規範](CLAUDE.md) — 代碼風格、工作流程、測試規範
-- [錯誤碼註冊表](docs/03_spec/20260422_errorCodes_central.md) — 業務錯誤碼定義
+- **[schema-lock（API Contract）](docs/03_spec/20260422_schema-lock_stock-detail-apis.md)** — 5 個 endpoint 的唯一事實源
+- **[errorCodes 中央化](docs/03_spec/20260422_errorCodes_central.md)** — 錯誤碼 0-9999 完整定義
+- **[spec 釐清](docs/03_spec/20260423_wave2_spec-clarifications.md)** — QA 發現的規格澄清與決策
 
-### 運維文件
+### 📊 架構與設計
 
-- [部署說明](docs/08_deployment/) — Jenkins Pipeline、環境配置、部署流程
-- [維運手冊](docs/09_documentation/MAINTENANCE.md) — 監控、告警、備份、災難復原
+- **[系統架構](docs/04_architecture/system/20260421_SystemArch_stock-analysis.md)** — AWS / 地端混合架構
+- **[部署架構](docs/04_architecture/system/20260423_wave2_deployment_architecture.md)** — ECS Fargate、RDS Multi-AZ、CDN、監控
+- **[專案架構](docs/04_architecture/project/20260421_ProjectArch_stock-backend.md)** — Java module 劃分、DDD 分層
 
-### 產品文件
+### 📈 進度與決策
 
-- [產品需求](docs/02_product/) — PRD、功能設計、業務規則
-- [系統規格](docs/03_spec/20260421_SRS_stock-analysis-mvp.md) — 完整需求規格書
+- **[Release Notes](docs/09_documentation/20260423_wave2_release-notes.md)** — Wave 2 完成總結
+- **[進度報告](docs/01_leader/progress/)** — Jamie 階段性進度摘要
+- **[決策紀錄](docs/01_leader/decisions/)** — 技術決策與投票結果
 
-### 進度與決策
+### 🐛 審查與測試報告
 
-- [進度報告](docs/01_leader/progress/) — Jamie 每階段完成摘要
-- [決策紀錄](docs/01_leader/decisions/) — 跨團隊決策與投票記錄
-- [技術債清單](docs/01_leader/td-tracking/20260422_TD-list-consolidated.md) — 待處理技術改進項
+- **[後端 Code Review](docs/06_review/backend/20260422_review_wave2_round2.md)** — Brian 審查意見
+- **[前端 Code Review](docs/06_review/frontend/20260422_review_waveB_round2.md)** — Fiona 審查意見
+- **[QA 交叉驗証](docs/07_qa/test-reports/)** — Quincy + Quinn 測試報告
+- **[缺陷 Triage](docs/05_development/)** — Bruno + Felix 缺陷分類與修復方案
 
 ---
 
@@ -361,19 +382,54 @@ npm run test:e2e
 
 ## 📝 版本歷史
 
-### v1.0.0-alpha（2026-04-22）
+### v0.2.0（2026-04-23）
 
-**Stage 8 Dual Review 進行中**
+**Wave 2 Release Candidate（RC）** ✨
 
+開發進度：
 - ✅ Wave 1：基礎建設 & 會員管理（後端）
-- ✅ Wave 2：行情、基本面、籌碼分析（後端）
+- ✅ Wave 2：行情、基本面、籌碼分析（後端）— **今日發布**
 - ✅ Wave A：首頁、登入頁、自選股清單（前端）
-- ✅ Wave B：個股詳情頁 & K 線圖（前端）
-- 🔄 Stage 8：Dual Code Review（後端 Brian、前端 Fiona）
-- 📋 Wave C：Refresh Token、Email 驗證、通知服務
-- 📋 Wave D：多語系、效能優化、上線準備
+- ✅ Wave B：個股詳情頁 & K 線圖（前端）— **今日發布**
+- ✅ Code Review：Brian（後端）+ Fiona（前端）通過
+- ✅ QA 交叉驗証：Quincy + Quinn 通過（99.5% 測試通過率）
+- 🔄 SonarQube：覆蓋率 82%（後端）/ 76%（前端）
+
+部署環境：
+- ✅ dev 環境（自動部署）
+- ✅ uat 環境（QA 驗証中）
+- 📅 preProd 環境（準備中）
+- 📅 prod 環境（Wave 3 後上線）
+
+技術文件：
+- ✅ [Release Notes](docs/09_documentation/20260423_wave2_release-notes.md)
+- ✅ [API 手冊](docs/09_documentation/20260423_wave2_api-handbook.md)
+- ✅ [前端指南](docs/09_documentation/20260423_wave2_frontend-dev-guide.md)
+- ✅ [維運手冊](docs/09_documentation/20260423_wave2_ops-handbook.md)
+
+### v0.1.0（2026-04-21）
+
+**Wave 1 + Wave A/B 開發完成**
+
+- ✅ Wave 1 後端完成（13 個 module）
+- ✅ Wave A/B 前端完成（首頁、登入、詳情頁、自選股）
+- 📋 Code Review 進行中
+- 📋 QA 測試進行中
+
+### 未來規劃
+
+**Wave 3（v0.3.0，預計 2026-06 開發中）**
+- 📅 推播通知系統（Email / FCM）
+- 📅 股票提醒設定（停損停利）
+- 📅 AI 綜合評分模型
+- 📅 Spring Security RBAC
+
+**Wave 4（v1.0.0，預計 2026-08 以後）**
+- 📅 機器學習回測引擎
+- 📅 社群討論區（模審系統）
+- 📅 行動 App（React Native）
 
 ---
 
-**最後更新**：2026-04-22  
+**最後更新**：2026-04-23  
 **維護人**：Daisy（技術文件員）、Jamie（Leader）
