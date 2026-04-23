@@ -154,10 +154,20 @@ export const handlers = [
 
   // POST /api/v1/quote/history
   // 解析 period 欄位，回傳對應聚合資料（KLineHistory 包裝物件）
+  // M-FE-WaveB-R2-03 修正：period 須通過白名單驗證，未在白名單者回 1003 PARAM_OUT_OF_RANGE
+  // 與真實後端行為對齊（schema-lock §3.3 KLinePeriod = 'daily' | 'weekly' | 'monthly'）
   http.post(`${BASE}/quote/history`, async ({ request }) => {
     const body = await request.json() as { stockId?: string; period?: string };
     const stockId = body.stockId ?? '2330';
     const period = body.period ?? 'daily';
+
+    const allowedPeriods = ['daily', 'weekly', 'monthly'] as const;
+    type AllowedPeriod = typeof allowedPeriods[number];
+    if (!allowedPeriods.includes(period as AllowedPeriod)) {
+      return HttpResponse.json(
+        buildErrorEnvelope(1003, `period must be one of: ${allowedPeriods.join(', ')}`),
+      );
+    }
 
     let items: ReturnType<typeof generateDailyItems>;
     if (period === 'weekly') {
@@ -235,6 +245,21 @@ export const errorHandlers = {
   chipUnavailable: [
     http.post(`${BASE}/chip/get`, () =>
       HttpResponse.json(buildErrorEnvelope(5012, 'Chip data source is temporarily unavailable')),
+    ),
+  ],
+  /** 5013 OTC_DATA_SOURCE_ERROR（OTC 行情來源故障，覆蓋 quote/history） */
+  otcUnavailable: [
+    http.post(`${BASE}/quote/get`, () =>
+      HttpResponse.json(buildErrorEnvelope(5013, 'OTC data source is temporarily unavailable')),
+    ),
+    http.post(`${BASE}/quote/history`, () =>
+      HttpResponse.json(buildErrorEnvelope(5013, 'OTC data source is temporarily unavailable')),
+    ),
+  ],
+  /** 5014 MOPS_FORMAT_CHANGED（MOPS 格式變動，影響 fundamental 解析） */
+  mopsFormatChanged: [
+    http.post(`${BASE}/fundamental/get`, () =>
+      HttpResponse.json(buildErrorEnvelope(5014, 'MOPS response format has changed; parser needs update')),
     ),
   ],
   /** isStale=true 情境（模擬 fallback 陳舊資料） */
