@@ -254,7 +254,7 @@ describe('http auth redirect (B-01 修正)', () => {
 
   it('一般業務錯誤（如 2011 密碼錯誤）不應觸發 navigate', async () => {
     mockPost('/api/v1/test/get', 200, {
-      code: ErrorCode.PASSWORD_INCORRECT,
+      code: ErrorCode.EMAIL_OR_PASSWORD_INCORRECT,
       message: 'wrong password',
       data: null,
       timestamp: '2026-04-22T08:00:00.000+08:00',
@@ -262,7 +262,7 @@ describe('http auth redirect (B-01 修正)', () => {
     });
 
     await expect(postJson('/api/v1/test/get', {})).rejects.toMatchObject({
-      code: ErrorCode.PASSWORD_INCORRECT,
+      code: ErrorCode.EMAIL_OR_PASSWORD_INCORRECT,
       traceId: 'trace-2011',
     });
 

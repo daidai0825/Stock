@@ -1,87 +1,48 @@
-import type { AddWatchlistRequest, RemoveWatchlistRequest, WatchlistItem } from '@/types/watchlist';
-
 /**
- * M-WATCH service 骨架（Wave A）
- * 對應 SRS §1.2 F-WATCH-01 ~ F-WATCH-08
+ * 自選股 Service（Wave 3 — 真實 API 呼叫）
  *
- * Wave A：mock data；後端 Wave 2 實作後切換真實呼叫（postJson）。
- * TODO（Wave B）：
- *   list   → POST /api/v1/watchlist/list
- *   add    → POST /api/v1/watchlist/add
- *   remove → POST /api/v1/watchlist/remove
+ * Wave 3 變更：
+ *   - 移除 Wave A mock data 與 simulateLatency
+ *   - 改用 postJson 呼叫真實 API（透過 MSW mock 在 dev 環境攔截）
+ *   - 新增 stockSearchService（股票搜尋）
+ *   - schema 對齊 docs/03_spec/20260422_schema-lock_stock-detail-apis.md
+ *
+ * API 端點（Envelope Pattern，全部 POST）：
+ *   POST /api/v1/watchlist/list   → WatchlistListResult
+ *   POST /api/v1/watchlist/add    → WatchlistAddResult
+ *   POST /api/v1/watchlist/remove → null
+ *   POST /api/v1/stock/search     → StockSearchResult
  */
 
-const MOCK_WATCHLIST: ReadonlyArray<WatchlistItem> = [
-  {
-    watchId: 'mock-watch-001',
-    stockCode: '2330',
-    stockName: '台積電',
-    market: 'TSE',
-    groupTag: '電子權值',
-    sortOrder: 1,
-    healthScore: 78,
-    changePercent: 1.25,
-    lastPrice: 1085,
-    dataDelayMinutes: 20,
-    createdAt: '2026-04-22T08:00:00.000+08:00',
-  },
-  {
-    watchId: 'mock-watch-002',
-    stockCode: '2317',
-    stockName: '鴻海',
-    market: 'TSE',
-    groupTag: '電子權值',
-    sortOrder: 2,
-    healthScore: 65,
-    changePercent: -0.45,
-    lastPrice: 220,
-    dataDelayMinutes: 20,
-    createdAt: '2026-04-22T08:00:00.000+08:00',
-  },
-  {
-    watchId: 'mock-watch-003',
-    stockCode: '0050',
-    stockName: '元大台灣50',
-    market: 'TSE',
-    groupTag: 'ETF',
-    sortOrder: 3,
-    healthScore: null,
-    changePercent: 0.32,
-    lastPrice: 195.5,
-    dataDelayMinutes: 20,
-    createdAt: '2026-04-22T08:00:00.000+08:00',
-  },
-];
-
-const simulateLatency = <T>(value: T, ms = 200): Promise<T> =>
-  new Promise((resolve) => {
-    setTimeout(() => resolve(value), ms);
-  });
+import { postJson } from '@/services/http';
+import type {
+  AddWatchlistRequest,
+  RemoveWatchlistRequest,
+  WatchlistListResult,
+  WatchlistAddResult,
+  StockSearchRequest,
+  StockSearchResult,
+} from '@/types/watchlist';
 
 export const watchlistService = {
-  list(): Promise<WatchlistItem[]> {
-    // Wave A mock；保持回應形狀與 Wave B 一致
-    return simulateLatency<WatchlistItem[]>([...MOCK_WATCHLIST]);
+  list(): Promise<WatchlistListResult> {
+    return postJson<Record<string, never>, WatchlistListResult>('/api/v1/watchlist/list', {});
   },
 
-  add(req: AddWatchlistRequest): Promise<WatchlistItem> {
-    // Wave A：僅回傳一個 mock；不真的寫入
-    return simulateLatency<WatchlistItem>({
-      watchId: `mock-watch-${Date.now()}`,
-      stockCode: req.stockCode,
-      stockName: '（待後端 Wave B 解析）',
-      market: 'TSE',
-      groupTag: req.groupTag ?? '預設群組',
-      sortOrder: 99,
-      healthScore: null,
-      changePercent: null,
-      lastPrice: null,
-      dataDelayMinutes: 20,
-      createdAt: new Date().toISOString(),
+  add(req: AddWatchlistRequest): Promise<WatchlistAddResult> {
+    return postJson<AddWatchlistRequest, WatchlistAddResult>('/api/v1/watchlist/add', req);
+  },
+
+  remove(req: RemoveWatchlistRequest): Promise<null> {
+    return postJson<RemoveWatchlistRequest, null>('/api/v1/watchlist/remove', req);
+  },
+};
+
+export const stockSearchService = {
+  search(keyword: string, limit = 10): Promise<StockSearchResult> {
+    return postJson<StockSearchRequest, StockSearchResult>('/api/v1/stock/search', {
+      keyword,
+      limit,
     });
-  },
-
-  remove(_req: RemoveWatchlistRequest): Promise<void> {
-    return simulateLatency<void>(undefined);
   },
 };

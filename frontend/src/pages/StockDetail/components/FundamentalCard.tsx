@@ -2,17 +2,14 @@ import { type FC } from 'react';
 import { Card, Descriptions, Skeleton, Tooltip, Typography } from 'antd';
 import { InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { Fundamental } from '@/types/stock';
+import type { StockFundamental } from '@/types/stock';
 
 const { Text } = Typography;
 
 interface FundamentalCardProps {
-  fundamental: Fundamental | undefined;
+  fundamental: StockFundamental | undefined;
   isLoading: boolean;
 }
-
-/** 將 null 值轉換為顯示用字串 */
-const display = (val: string | null): string => (val !== null ? val : '-');
 
 export const FundamentalCard: FC<FundamentalCardProps> = ({ fundamental, isLoading }) => {
   const { t } = useTranslation();
@@ -42,20 +39,27 @@ export const FundamentalCard: FC<FundamentalCardProps> = ({ fundamental, isLoadi
       ) : (
         <Descriptions column={2} size="small" bordered>
           <Descriptions.Item label={t('stock.fundamental.eps')} data-testid="fundamental-eps">
-            {display(fundamental.eps)}
+            {fundamental.eps}
           </Descriptions.Item>
+          {/* 欄位名稱固定為 per（schema-lock §4.3：禁止 perRatio） */}
           <Descriptions.Item label={t('stock.fundamental.per')} data-testid="fundamental-per">
-            {display(fundamental.per)}
+            {fundamental.per}
           </Descriptions.Item>
+          {/* 欄位名稱固定為 pbr（schema-lock §4.3：禁止 pbrRatio） */}
           <Descriptions.Item label={t('stock.fundamental.pbr')} data-testid="fundamental-pbr">
-            {display(fundamental.pbr)}
+            {fundamental.pbr}
           </Descriptions.Item>
           <Descriptions.Item label={t('stock.fundamental.roe')} data-testid="fundamental-roe">
-            {display(fundamental.roe)}
+            {fundamental.roe}
+          </Descriptions.Item>
+          <Descriptions.Item
+            label={t('stock.fundamental.reportPeriod')}
+            data-testid="fundamental-report-period"
+          >
+            {fundamental.reportYear} Q{fundamental.reportQuarter}
           </Descriptions.Item>
           <Descriptions.Item
             label={t('stock.fundamental.updatedAt')}
-            span={2}
             data-testid="fundamental-updated-at"
           >
             {fundamental.updatedAt}

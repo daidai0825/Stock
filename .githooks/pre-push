@@ -102,10 +102,8 @@ run_backend_tests() {
         return 0
     fi
 
-    if ! command -v mvn >/dev/null 2>&1; then
-        log_error "找不到 mvn 指令，請安裝 Maven 3.9+"
-        log_error "macOS: brew install maven"
-        log_error "或使用 Maven Wrapper: ./mvnw"
+    if [[ ! -f "${BACKEND_DIR}/mvnw" ]]; then
+        log_error "找不到 ./mvnw，請確保 Maven Wrapper 已安裝"
         return 1
     fi
 
@@ -114,7 +112,7 @@ run_backend_tests() {
     log_info "預估耗時：2-5 分鐘"
     local start_time=$(date +%s)
 
-    if mvn -B -q test 2>&1 | tee /tmp/backend_test.log; then
+    if ./mvnw -B -q test 2>&1 | tee /tmp/backend_test.log; then
         local end_time=$(date +%s)
         local elapsed=$((end_time - start_time))
         log_success "後端單元測試通過 ✓（耗時 ${elapsed}s）"
@@ -123,7 +121,7 @@ run_backend_tests() {
         log_error "後端單元測試失敗 ✗"
         log_error ""
         log_error "修復指令："
-        log_error "  cd backend && mvn test"
+        log_error "  cd backend && ./mvnw test"
         log_error ""
         log_error "失敗摘要："
         grep -E "FAILURE|ERROR|\[ERROR\]" /tmp/backend_test.log | head -10 || true
@@ -142,8 +140,8 @@ run_backend_cve_scan() {
         return 0
     fi
 
-    if ! command -v mvn >/dev/null 2>&1; then
-        log_error "找不到 mvn 指令，請安裝 Maven 3.9+"
+    if [[ ! -f "${BACKEND_DIR}/mvnw" ]]; then
+        log_error "找不到 ./mvnw，請確保 Maven Wrapper 已安裝"
         return 1
     fi
 
@@ -152,7 +150,7 @@ run_backend_cve_scan() {
     log_info "預估耗時：5-15 分鐘（首次執行需下載 NVD 資料庫）"
     log_info "正在掃描... 報告將輸出至 backend/target/dependency-check-report.html"
 
-    if mvn org.owasp:dependency-check-maven:check -B -q; then
+    if ./mvnw org.owasp:dependency-check-maven:check -B -q; then
         log_success "後端 CVE 掃描通過 ✓"
         return 0
     else
@@ -164,7 +162,7 @@ run_backend_cve_scan() {
         log_error "  1. 開啟 HTML 報告確認漏洞清單"
         log_error "  2. 升級對應依賴到安全版本"
         log_error "  3. 若為誤報，於 backend/dependency-check.xml 加入抑制規則"
-        log_error "  4. 重新跑 mvn org.owasp:dependency-check-maven:check 確認通過"
+        log_error "  4. 重新跑 ./mvnw org.owasp:dependency-check-maven:check 確認通過"
         log_error ""
         log_error "緊急 bypass（需 Jamie 簽核）：git push --no-verify"
         return 1

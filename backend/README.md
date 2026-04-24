@@ -23,11 +23,22 @@ docker-compose up -d
 
 ### 2. 建置與測試
 
+使用 **Maven Wrapper**（推薦，無須本機安裝 Maven）：
+
 ```bash
 cd /usr/local/dale/daidai0825/Stock/backend
+./mvnw clean install -DskipTests
+./mvnw test
+```
+
+或使用系統 Maven（若已安裝）：
+
+```bash
 mvn clean install -DskipTests
 mvn test
 ```
+
+首次執行 `./mvnw` 時，會自動下載 Maven 3.9.9 到 `.mvn/wrapper/` 目錄。
 
 ### 3. 由 IDE 啟動
 

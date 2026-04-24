@@ -143,7 +143,7 @@ const buildBusinessErrorFromAxios = (error: AxiosError<ApiResponse<unknown>>): B
   }
 
   // 沒有 envelope（純網路錯誤、CORS、timeout 等）
-  return new BusinessError(ErrorCode.UNKNOWN, error.message !== '' ? error.message : 'network error');
+  return new BusinessError(ErrorCode.UNKNOWN_ERROR, error.message !== '' ? error.message : 'network error');
 };
 
 /**
@@ -164,7 +164,7 @@ http.interceptors.response.use(
   (response: AxiosResponse<ApiResponse<unknown>>) => {
     const envelope = response.data;
     if (envelope === null || typeof envelope !== 'object' || !('code' in envelope)) {
-      throw new BusinessError(ErrorCode.UNKNOWN, 'Invalid envelope structure');
+      throw new BusinessError(ErrorCode.UNKNOWN_ERROR, 'Invalid envelope structure');
     }
 
     if (envelope.code === ErrorCode.SUCCESS) {
@@ -186,7 +186,7 @@ http.interceptors.response.use(
     if (error.response?.status === 401 || requiresRedirectToLogin(businessError.code)) {
       // 若是 401 但沒有業務碼，視為 UNAUTHORIZED 觸發 hard logout
       const codeForRedirect =
-        businessError.code === ErrorCode.UNKNOWN ? ErrorCode.UNAUTHORIZED : businessError.code;
+        businessError.code === ErrorCode.UNKNOWN_ERROR ? ErrorCode.UNAUTHORIZED : businessError.code;
       dispatchAuthRedirect(codeForRedirect);
     }
 

@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+# Copyright 2007-2021 the original author or authors.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# ==============================================================================
+
+# Maven Wrapper for Unix/Linux/Mac
+# Version: 3.2.0
+# ==============================================================================
+
+set -e
+
+# Try to locate basedir
+basedir=`dirname "$0"`/..
+basedir=`cd "$basedir" 2>/dev/null && pwd` || basedir="$PWD"
+
+# Attempt to set APP_HOME
+if [ -z "$APP_HOME" ]; then
+    APP_HOME="$basedir"
+fi
+
+# Resolve links: $0 may be a symlink
+PRG="$0"
+while [ -h "$PRG" ] ; do
+    ls=`ls -ld "$PRG"`
+    link=`expr "$ls" : '.*-> \(.*\)$'`
+    if expr "$link" : '/.*' > /dev/null; then
+        PRG="$link"
+    else
+        PRG=`dirname "$PRG"`"/$link"
+    fi
+done
+
+# Set MAVEN_HOME
+MAVEN_HOME="${MAVEN_HOME:-.mvn/wrapper}"
+
+# Maven distribution archive URL
+MAVEN_PROJECTBASEDIR="${MAVEN_BASEDIR:-$(pwd)}"
+MAVEN_HOME_DIR="${MAVEN_HOME_DIR:-.mvn/wrapper}"
+MAVEN_WRAPPER_JAR="${MAVEN_HOME_DIR}/maven-wrapper.jar"
+MAVEN_WRAPPER_PROPERTIES="${MAVEN_HOME_DIR}/maven-wrapper.properties"
+
+# Load properties
+if [ -f "$MAVEN_WRAPPER_PROPERTIES" ]; then
+    . "$MAVEN_WRAPPER_PROPERTIES"
+fi
+
+# Set default Maven distribution URL if not defined
+if [ -z "$distributionUrl" ]; then
+    distributionUrl="https://repo.maven.apache.org/maven2/org/apache/maven/apache-maven/3.9.9/apache-maven-3.9.9-bin.zip"
+fi
+
+# Create wrapper directory if it doesn't exist
+mkdir -p "$MAVEN_HOME_DIR"
+
+# Check if Maven is already extracted
+if [ ! -d "$MAVEN_HOME_DIR/apache-maven-3.9.9" ] && [ ! -f "$MAVEN_HOME_DIR/mvn" ]; then
+    echo "Downloading Maven from $distributionUrl ..."
+
+    # Download Maven distribution
+    MAVEN_DIST="$MAVEN_HOME_DIR/maven-dist.zip"
+
+    if command -v curl >/dev/null 2>&1; then
+        curl -fL "$distributionUrl" -o "$MAVEN_DIST"
+    elif command -v wget >/dev/null 2>&1; then
+        wget "$distributionUrl" -O "$MAVEN_DIST"
+    else
+        echo "Error: Neither curl nor wget found. Please install one of them."
+        exit 1
+    fi
+
+    # Extract Maven distribution
+    echo "Extracting Maven distribution ..."
+    if command -v unzip >/dev/null 2>&1; then
+        unzip -q "$MAVEN_DIST" -d "$MAVEN_HOME_DIR"
+    else
+        echo "Error: unzip not found. Please install unzip."
+        exit 1
+    fi
+
+    rm -f "$MAVEN_DIST"
+    echo "Maven distribution extracted successfully."
+fi
+
+# Find Maven executable
+if [ -d "$MAVEN_HOME_DIR/apache-maven-3.9.9" ]; then
+    MVN_EXEC="$MAVEN_HOME_DIR/apache-maven-3.9.9/bin/mvn"
+else
+    # Try to find mvn in PATH as fallback
+    MVN_EXEC=$(which mvn 2>/dev/null) || MVN_EXEC="mvn"
+fi
+
+# Make executable
+if [ -f "$MVN_EXEC" ]; then
+    chmod +x "$MVN_EXEC"
+    exec "$MVN_EXEC" "$@"
+else
+    echo "Error: Maven executable not found. Please check your installation."
+    exit 1
+fi

@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.MalformedJwtException;
 import jakarta.servlet.http.HttpServletRequest;
+import tw.com.stockplatform.member.security.exception.JwtExpiredException;
+import tw.com.stockplatform.member.security.exception.JwtInvalidException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -77,31 +79,31 @@ class MemberControllerTest {
     }
 
     @Test
-    @DisplayName("currentUserId：過期 token 拋 3002 TOKEN_EXPIRED（BE-02 修復驗證）")
+    @DisplayName("currentUserId：過期 token 拋 JwtExpiredException（→ MemberExceptionHandler 轉 3002）")
     void currentUserId_ExpiredToken() {
+        // M-BE-W2-10：JwtTokenProvider.parse() 將 jjwt 例外包裝為 JwtExpiredException。
+        // MemberController.currentUserId 不 catch，由 MemberExceptionHandler 統一轉 envelope。
+        // 此測試僅驗證 wrapper 例外能正確 propagate；envelope 轉換邏輯由 MemberExceptionHandler 自身的測試覆蓋。
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getHeader("Authorization")).thenReturn("Bearer expired.token.value");
         when(jwtTokenProvider.parse("expired.token.value"))
-            .thenThrow(new ExpiredJwtException(null, null, "expired"));
+            .thenThrow(new JwtExpiredException(new ExpiredJwtException(null, null, "expired")));
 
         assertThatThrownBy(() -> controller.logout(request))
-            .isInstanceOf(BusinessException.class)
-            .extracting("code")
-            .isEqualTo(ErrorCode.TOKEN_EXPIRED.getCode());
+            .isInstanceOf(JwtExpiredException.class);
     }
 
     @Test
-    @DisplayName("currentUserId：無效 token 拋 3003 TOKEN_INVALID（BE-02 修復驗證）")
+    @DisplayName("currentUserId：無效 token 拋 JwtInvalidException（→ MemberExceptionHandler 轉 3003）")
     void currentUserId_InvalidToken() {
+        // 同上，驗證 wrapper 例外 propagate。
         HttpServletRequest request = mock(HttpServletRequest.class);
         when(request.getHeader("Authorization")).thenReturn("Bearer broken.token");
         when(jwtTokenProvider.parse("broken.token"))
-            .thenThrow(new MalformedJwtException("malformed"));
+            .thenThrow(new JwtInvalidException(new MalformedJwtException("malformed")));
 
         assertThatThrownBy(() -> controller.logout(request))
-            .isInstanceOf(BusinessException.class)
-            .extracting("code")
-            .isEqualTo(ErrorCode.TOKEN_INVALID.getCode());
+            .isInstanceOf(JwtInvalidException.class);
     }
 
     @Test

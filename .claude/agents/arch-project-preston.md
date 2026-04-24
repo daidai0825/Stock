@@ -38,7 +38,7 @@ tools: Read, Write, Edit, Glob, Grep, Bash
 4. **核心類別設計**：關鍵類別的職責與互動
 5. **設計模式應用**：每處使用的模式與理由
 6. **ER Diagram**：所有表與關聯（Mermaid 或文字描述）
-7. **資料庫設計規範遵循**：對照 [oracle-database](../rules/oracle-database.md)
+7. **資料庫設計規範遵循**：對照 [relational-database](../rules/relational-database.md)
 8. **Configuration 策略**：application.yml 的 profile 規劃（local/dev/uat/stg/prod）
 9. **例外處理架構**：自定義例外、@ControllerAdvice 設計
 10. **AOP 設計**：日誌、效能監控、交易管理切面

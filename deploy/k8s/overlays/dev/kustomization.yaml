@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# 基於 base，疊加 dev 差異
+bases:
+  - ../../base
+
+namespace: stock-dev
+
+# 所有資源加上 dev 標籤
+commonLabels:
+  environment: dev
+
+# Image tag 由 Jenkins Pipeline 在部署時覆蓋
+# 範例：kustomize edit set image registry.example.com/stock-platform:${BUILD_NUMBER}
+images:
+  - name: registry.example.com/stock-platform
+    newTag: latest
+
+# dev 環境差異 patches
+patches:
+  # replicas 降為 2（節省 dev 資源）
+  - patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 2
+    target:
+      kind: Deployment
+      name: stock-platform
+
+  # 資源限制降低（dev 環境成本考量）
+  - patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: 1000m
+            memory: 1024Mi
+    target:
+      kind: Deployment
+      name: stock-platform
+
+  # dev 環境 ConfigMap 差異（SPRING_PROFILES_ACTIVE、cache prefix）
+  - patch: |-
+      - op: replace
+        path: /data/SPRING_PROFILES_ACTIVE
+        value: dev
+      - op: replace
+        path: /data/STOCK_CACHE_KEY_PREFIX
+        value: "dev:"
+      - op: replace
+        path: /data/STOCK_DB_POOL_MAX
+        value: "20"
+      - op: replace
+        path: /data/STOCK_DB_POOL_MIN
+        value: "5"
+    target:
+      kind: ConfigMap
+      name: stock-platform-config

@@ -1,0 +1,36 @@
+# Build outputs
+**/target/
+**/build/
+
+# Version control
+.git/
+.gitignore
+
+# IDE / Editor
+.idea/
+.vscode/
+**/*.iml
+*.iws
+*.ipr
+
+# Test results & coverage reports
+**/test-results/
+**/surefire-reports/
+**/failsafe-reports/
+**/jacoco/
+**/jacoco.exec
+
+# OS generated
+.DS_Store
+Thumbs.db
+
+# Maven wrapper cache（image 內自有 mvn）
+.mvn/repository/
+
+# 敏感資訊（不應進入 image）
+**/*.env
+**/application-local.yml
+
+# Log files
+**/*.log
+**/logs/

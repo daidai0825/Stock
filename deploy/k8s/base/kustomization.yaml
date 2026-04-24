@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - deployment.yaml
+  - service.yaml
+  - configmap.yaml
+  # secret-template.yaml 不列入 resources；
+  # 實際 Secret 由 External Secrets Operator / Sealed Secrets 建立

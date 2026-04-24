@@ -7,11 +7,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.ValueOperations;
 import tw.com.stockplatform.chip.convertor.ChipConvertor;
 import tw.com.stockplatform.chip.dto.request.ChipGetRequest;
 import tw.com.stockplatform.chip.dto.response.ChipDTO;
+import tw.com.stockplatform.chip.dto.response.InstitutionItem;
 import tw.com.stockplatform.chip.repository.StockChipMapper;
 import tw.com.stockplatform.chip.service.impl.ChipServiceImpl;
 import tw.com.stockplatform.common.exception.BusinessException;
@@ -37,11 +40,15 @@ import static org.mockito.Mockito.when;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * ChipServiceImpl 單元測試（Wave 2 Round 1 更新）。
+ * ChipServiceImpl 單元測試（Wave 2 Round 2 更新）。
  * <p>
- * B-BE-W2-02 修正驗證：週末/假日情境下使用 TradingCalendarService 判斷有效性。
+ * Round 2 變更：ChipDTO 結構改為 schema-lock v1.0（institutions 陣列 + date + source + totalNetBuySell）。
  */
 @ExtendWith(MockitoExtension.class)
+// 部分測試（NotFound / FetchFromTWSE / Convertor 直測）會因 production 短路或不依賴 mock
+// 而讓共用 setUp() 的 redisTemplate stub 變成 unnecessary stubbing。
+// 採 LENIENT 允許共用 stub；個別測試仍透過 verify 驗證互動次數。
+@MockitoSettings(strictness = Strictness.LENIENT)
 class ChipServiceImplTest {
 
     @Mock
@@ -90,7 +97,8 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(today, any())).thenReturn(true);
+        // 同一 stub 內混用具體值與 matcher 會觸發 InvalidUseOfMatchers，需全部 matcher 化。
+        when(tradingCalendarService.isValidRecentTradingDay(eq(today), any())).thenReturn(true);
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
         ChipDTO result = chipService.getChip(new ChipGetRequest("2330"));
@@ -107,13 +115,14 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(friday, any())).thenReturn(true);
+        // matcher 化避免 InvalidUseOfMatchers
+        when(tradingCalendarService.isValidRecentTradingDay(eq(friday), any())).thenReturn(true);
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
         ChipDTO result = chipService.getChip(new ChipGetRequest("2330"));
 
         assertThat(result.stockId()).isEqualTo("2330");
-        verify(twseClient, never()).fetchInstitutional(any()); // 不應呼叫外部
+        verify(twseClient, never()).fetchInstitutional(any());
     }
 
     @Test
@@ -124,13 +133,13 @@ class ChipServiceImplTest {
         ChipDTO dto = buildChipDTO("2330");
         when(valueOperations.get(anyString())).thenReturn(null);
         when(chipMapper.findLatestByStockId("2330")).thenReturn(Optional.of(po));
-        when(tradingCalendarService.isValidRecentTradingDay(friday, any())).thenReturn(false);
-        when(twseClient.fetchInstitutional(any())).thenReturn(List.of()); // 外部回空
+        // matcher 化避免 InvalidUseOfMatchers
+        when(tradingCalendarService.isValidRecentTradingDay(eq(friday), any())).thenReturn(false);
+        when(twseClient.fetchInstitutional(any())).thenReturn(List.of());
         when(chipConvertor.toDTO(po)).thenReturn(dto);
 
         ChipDTO result = chipService.getChip(new ChipGetRequest("2330"));
 
-        // 應回 DB fallback，不拋例外
         assertThat(result.stockId()).isEqualTo("2330");
     }
 
@@ -165,12 +174,43 @@ class ChipServiceImplTest {
         verify(chipMapper).upsert(any(StockChipPO.class));
     }
 
+    @Test
+    @DisplayName("ChipConvertor.toDTO：PO 轉 DTO 應產生 institutions 陣列（外資/投信/自營商順序固定）")
+    void chipConvertor_ToDTO_ProducesInstitutionsArray() {
+        // 直接使用 lambda 建立 ChipConvertor，驗證 default toDTO 邏輯
+        // （MapStruct 在 production 生成 ChipConvertorImpl，測試此 default 方法邏輯等同）
+        tw.com.stockplatform.chip.convertor.ChipConvertor convertor =
+            new tw.com.stockplatform.chip.convertor.ChipConvertor() {};
+
+        StockChipPO po = buildChipPO("2330", LocalDate.now());
+        ChipDTO dto = convertor.toDTO(po);
+
+        assertThat(dto.institutions()).hasSize(3);
+        assertThat(dto.institutions().get(0).name()).isEqualTo("外資");
+        assertThat(dto.institutions().get(1).name()).isEqualTo("投信");
+        assertThat(dto.institutions().get(2).name()).isEqualTo("自營商");
+        assertThat(dto.institutions().get(0).netBuySell()).isEqualTo(5_000L);
+        assertThat(dto.institutions().get(1).netBuySell()).isEqualTo(1_000L);
+        assertThat(dto.institutions().get(2).netBuySell()).isEqualTo(500L);
+        assertThat(dto.totalNetBuySell()).isEqualTo(6_500L);
+        assertThat(dto.source()).isEqualTo("TWSE");
+        assertThat(dto.date()).isEqualTo(LocalDate.now());
+    }
+
     // --- 輔助方法 ---
 
     private ChipDTO buildChipDTO(String stockId) {
-        return new ChipDTO(stockId, "台積電", "TWSE", LocalDate.now(),
-            new BigDecimal("5000"), new BigDecimal("1000"), new BigDecimal("500"),
-            new BigDecimal("6500"));
+        return new ChipDTO(
+            stockId,
+            LocalDate.now(),
+            List.of(
+                new InstitutionItem("外資",   0L, 0L, 5_000L),
+                new InstitutionItem("投信",   0L, 0L, 1_000L),
+                new InstitutionItem("自營商", 0L, 0L, 500L)
+            ),
+            6_500L,
+            "TWSE"
+        );
     }
 
     private StockChipPO buildChipPO(String stockId, LocalDate tradeDate) {

@@ -63,6 +63,10 @@ export const PriceHeader: FC<PriceHeaderProps> = ({ quote, isLoading }) => {
         >
           {quote.stockId}・{quote.stockName}
         </Title>
+        {/* market 標籤（schema-lock §1.3：必含 market） */}
+        <Tag color="blue" data-testid="price-market">
+          {quote.market}
+        </Tag>
       </Space>
 
       <Space size={16} align="baseline" wrap>
@@ -86,7 +90,9 @@ export const PriceHeader: FC<PriceHeaderProps> = ({ quote, isLoading }) => {
         </Tag>
       </Space>
 
+      {/* 前收盤價（schema-lock §1.3：必含 previousClose） */}
       <Text type="secondary" style={{ fontSize: 12 }}>
+        {t('stock.previousClose')}：{quote.previousClose}・
         {t('stock.volume')}：{quote.volume.toLocaleString()}・
         {t('stock.updatedAt')}：{formatDateTime(quote.updatedAt)}
       </Text>

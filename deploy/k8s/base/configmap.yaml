@@ -1,0 +1,35 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: stock-platform-config
+  labels:
+    app: stock-platform
+    component: backend
+data:
+  # ── Spring Profile ─────────────────────────────────────────────────────────
+  # 各 overlay 的 kustomization.yaml 會透過 patches 覆蓋此值
+  SPRING_PROFILES_ACTIVE: "prod"
+
+  # ── 應用程式非敏感配置 ─────────────────────────────────────────────────────
+  # Redis port（敏感的 host/password 在 secret-template.yaml）
+  STOCK_REDIS_PORT: "6379"
+
+  # Hikari 連線池上限（prod 預設；各 overlay 可覆蓋）
+  STOCK_DB_POOL_MAX: "50"
+  STOCK_DB_POOL_MIN: "10"
+
+  # JWT access token 效期（秒）：15 分鐘
+  STOCK_JWT_TTL: "900"
+
+  # Cache key prefix（各 overlay 覆蓋以區分環境資料）
+  # dev overlay: STOCK_CACHE_KEY_PREFIX=dev:
+  # prod overlay: STOCK_CACHE_KEY_PREFIX=prod:
+  STOCK_CACHE_KEY_PREFIX: "prod:"
+
+  # ── 外部 API URL（非機密，但依環境而異；各 overlay 覆蓋） ────────────────
+  STOCK_TWSE_BASE_URL: "https://www.twse.com.tw"
+  STOCK_OTC_BASE_URL:  "https://www.tpex.org.tw"
+  STOCK_MOPS_BASE_URL: "https://mops.twse.com.tw"
+
+  # ── JVM 選項（如需額外調整可在此設定） ──────────────────────────────────────
+  # JAVA_TOOL_OPTIONS 已在 Dockerfile ENTRYPOINT 設定 MaxRAMPercentage

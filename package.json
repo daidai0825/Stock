@@ -1,0 +1,28 @@
+{
+  "name": "stock",
+  "version": "1.0.0",
+  "description": "> 為散戶投資人設計的響應式 Web 股票分析平台 >  > **v0.2.0（Wave 2）已發布** | 個股詳情頁上線 | 4 個核心 API + 完整前端",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/daidai0825/Stock.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/daidai0825/Stock/issues"
+  },
+  "homepage": "https://github.com/daidai0825/Stock#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
+  }
+}

@@ -19,8 +19,15 @@ replay_pid*
 
 # Maven
 .mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/maven-wrapper.jar
+**/.mvn/wrapper/apache-maven-*/
+**/.mvn/wrapper/*.zip
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# Maven dependency scan artifacts (Linus 週報自動產生，不入庫)
+dependency-tree.txt
+**/dependency-tree.txt
 
 # Gradle
 .gradle/
@@ -57,6 +64,7 @@ test-results/
 
 # MSW
 public/mockServiceWorker.js
+**/public/mockServiceWorker.js
 
 # ---------------------------------------------------------------------------
 # 環境變數與機密（嚴禁 commit）
@@ -171,6 +179,7 @@ ansible/inventory/private/
 .claude/local/
 .claude/sessions/
 .claude/cache/
+.claude/scheduled_tasks.lock
 
 # ---------------------------------------------------------------------------
 # 報表/掃描結果（生成物，不入版控）

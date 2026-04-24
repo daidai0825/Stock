@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: stock-platform
+  labels:
+    app: stock-platform
+    component: backend
+spec:
+  # ClusterIP：僅叢集內部可存取，對外流量由 Ingress / ALB 控制
+  type: ClusterIP
+  selector:
+    app: stock-platform
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8080

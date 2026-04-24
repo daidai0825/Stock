@@ -64,7 +64,7 @@ class MOPSClientImplTest {
         when(responseSpec.body(com.fasterxml.jackson.databind.JsonNode.class)).thenReturn(mockResponse);
 
         // When
-        List<MOPSEpsDTO> result = mopsClient.fetchEps("2330");
+        List<MOPSEpsDTO> result = mopsClient.fetchEps("2330", "TWSE");
 
         // Then
         assertThat(result).hasSize(2);
@@ -85,7 +85,7 @@ class MOPSClientImplTest {
         when(responseSpec.body(com.fasterxml.jackson.databind.JsonNode.class)).thenReturn(mockResponse);
 
         // When
-        MOPSFinancialSummaryDTO result = mopsClient.fetchFinancialSummary("2330");
+        MOPSFinancialSummaryDTO result = mopsClient.fetchFinancialSummary("2330", "TWSE");
 
         // Then
         assertThat(result.stockId()).isEqualTo("2330");
@@ -106,7 +106,7 @@ class MOPSClientImplTest {
             .thenThrow(new RestClientException("Connection refused"));
 
         // Then
-        assertThatThrownBy(() -> mopsClient.fetchEps("2330"))
+        assertThatThrownBy(() -> mopsClient.fetchEps("2330", "TWSE"))
             .isInstanceOf(ExternalServiceException.class);
     }
 

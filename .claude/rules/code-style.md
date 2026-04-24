@@ -116,7 +116,7 @@ indent_style = tab
 
 ### 資料庫
 
-詳見 [oracle-database.md](oracle-database.md)。
+詳見 [relational-database.md](relational-database.md)。
 
 ## 註解規範
 

@@ -32,6 +32,8 @@
         <module>stock-risk</module>
         <module>stock-score</module>
         <module>stock-notify</module>
+        <module>stock-search</module>
+        <module>stock-alert</module>
         <module>stock-boot</module>
     </modules>
 
@@ -44,6 +46,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <!-- Spring Boot 由 parent 帶入 3.3.13 -->
+        <logback.version>1.5.32</logback.version>
         <mybatis-spring-boot.version>3.0.5</mybatis-spring-boot.version>
         <postgresql.version>42.7.5</postgresql.version>
         <flyway.version>10.20.1</flyway.version>
@@ -56,6 +59,8 @@
         <commons-lang3.version>3.17.0</commons-lang3.version>
         <commons-codec.version>1.17.1</commons-codec.version>
         <bcrypt.version>0.10.2</bcrypt.version>
+        <web-push.version>5.1.1</web-push.version>
+        <bouncycastle.version>1.77</bouncycastle.version>
     </properties>
 
     <dependencyManagement>
@@ -126,12 +131,28 @@
                 <artifactId>stock-notify</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>tw.com.stockplatform</groupId>
+                <artifactId>stock-search</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>tw.com.stockplatform</groupId>
+                <artifactId>stock-alert</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- ORM -->
             <dependency>
                 <groupId>org.mybatis.spring.boot</groupId>
                 <artifactId>mybatis-spring-boot-starter</artifactId>
                 <version>${mybatis-spring-boot.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter-test</artifactId>
+                <version>${mybatis-spring-boot.version}</version>
+                <scope>test</scope>
             </dependency>
             <dependency>
                 <groupId>org.postgresql</groupId>
@@ -170,7 +191,7 @@
                 <scope>runtime</scope>
             </dependency>
 
-            <!-- BCrypt 獨立套件（直接用，不依賴 Spring Security 全套也可） -->
+            <!-- BCrypt -->
             <dependency>
                 <groupId>at.favre.lib</groupId>
                 <artifactId>bcrypt</artifactId>
@@ -227,6 +248,20 @@
                 <groupId>org.springdoc</groupId>
                 <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
                 <version>${springdoc.version}</version>
+            </dependency>
+
+            <!-- Web Push -->
+            <dependency>
+                <groupId>nl.martijndwars</groupId>
+                <artifactId>web-push</artifactId>
+                <version>${web-push.version}</version>
+            </dependency>
+
+            <!-- Bouncy Castle（web-push 依賴） -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
